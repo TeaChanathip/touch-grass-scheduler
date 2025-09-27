@@ -1,16 +1,15 @@
 package main
 
 import (
-	"github.com/TeaChanathip/touch-grass-scheduler/internal/configs"
-	"github.com/gin-gonic/gin"
+	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
+	libfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/lib"
+	"go.uber.org/fx"
 )
 
 func main() {
-	flagConfig := configs.LoadFlags()
-	configs.LoadConfig(flagConfig.Environment)
-	configs.GetDatabase()
-
-	// Create a Gin router with default middleware (logger and recovery)
-	r := gin.Default()
-	r.Run()
+	// Run each module with FX
+	fx.New(
+		configfx.Module,
+		libfx.Module,
+	).Run()
 }

@@ -1,4 +1,4 @@
-package configs
+package configfx
 
 import (
 	"fmt"
@@ -6,9 +6,15 @@ import (
 
 	"github.com/caarlos0/env"
 	"github.com/joho/godotenv"
+	"go.uber.org/fx"
 )
 
-type Config struct {
+type AppConfigParams struct {
+	fx.In
+	Flag *FlagConfig
+}
+
+type AppConfig struct {
 	// Database
 	DBHost     string `env:"DB_HOST" envDefault:"localhost"`
 	DBUser     string `env:"DB_USER" envDefault:"postgres"`
@@ -18,28 +24,26 @@ type Config struct {
 	DBSSLMode  string `env:"DB_SSLMODE" envDefault:"disable"`
 }
 
-var AppConfig *Config
-
-func LoadConfig(environment string) *Config {
-	config := &Config{}
+func NewAppConfig(param AppConfigParams) *AppConfig {
+	config := &AppConfig{}
 
 	// Load ENV by the set environment (relative to server root directory)
-	if err := godotenv.Load("env/.env." + environment); err != nil {
-		log.Fatalf("Error loading .env.%s file: %+v", environment, err)
+	if err := godotenv.Load("env/.env." + param.Flag.Environment); err != nil {
+		log.Fatalf("Error loading .env.%s file: %+v", param.Flag.Environment, err)
 	}
 
-	// Parse ENV to Config
+	/*
+		Parse ENV to Config
+		Fallback to default values if not defined
+	*/
 	if err := env.Parse(config); err != nil {
 		log.Fatalf("Error parsing environment variables: %+v", err)
 	}
 
-	// Set global config
-	AppConfig = config
-
 	return config
 }
 
-func (c *Config) GetDBConfig() string {
+func (c *AppConfig) GetDBConfig() string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		c.DBHost, c.DBUser, c.DBPassword, c.DBName, c.DBPort, c.DBSSLMode)
 }

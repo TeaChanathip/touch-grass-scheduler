@@ -1,4 +1,4 @@
-package configs
+package configfx
 
 import (
 	"flag"
@@ -10,8 +10,8 @@ type FlagConfig struct {
 	Environment string
 }
 
-func LoadFlags() *FlagConfig {
-	flagConfig := FlagConfig{}
+func NewFlagsConfig() *FlagConfig {
+	flagConfig := &FlagConfig{}
 
 	flag.StringVar(&flagConfig.Environment, "e", "development", "Environment to run in (shorthand)")
 	flag.Parse()
@@ -21,7 +21,7 @@ func LoadFlags() *FlagConfig {
 		flagConfig.Environment = "development"
 	}
 
-	return &flagConfig
+	return flagConfig
 }
 
 func isValidEnvironment(env string) bool {
