@@ -1,11 +1,12 @@
 package libfx
 
 import (
-	"log"
+	"os"
 	"time"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -13,21 +14,24 @@ import (
 type DatabaseParams struct {
 	fx.In
 	AppConfig *configfx.AppConfig
+	Logger    *zap.Logger
 }
 
 func NewDatabase(param DatabaseParams) *gorm.DB {
+	logger := param.Logger
 	dsn := param.AppConfig.GetDBConfig()
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		log.Fatalf("Error connecting to DB: %+v", err)
+		logger.Error("Error connecting to DB", zap.Error(err))
+		os.Exit(1)
 	}
 
 	// Get underlying SQL DB to check connection and get stats
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Printf("Warning: Could not get underlying SQL DB: %+v", err)
+		logger.Warn("Could not get underlying SQL DB: %+v", zap.Error(err))
 	} else {
 		// Configure connection pool
 		sqlDB.SetMaxIdleConns(10)
@@ -36,17 +40,15 @@ func NewDatabase(param DatabaseParams) *gorm.DB {
 
 		// Test the connection
 		if err := sqlDB.Ping(); err != nil {
-			log.Fatalf("Database ping failed: %+v", err)
+			logger.Error("Database ping failed", zap.Error(err))
 		}
 
 		// Log connection statistics
 		stats := sqlDB.Stats()
-		log.Printf("✅ Database connected successfully!")
-		log.Printf("Connection Stats:")
-		log.Printf("  - Open Connections: %d", stats.OpenConnections)
-		log.Printf("  - Max Open Connections: %d", stats.MaxOpenConnections)
-		log.Printf("  - In Use: %d", stats.InUse)
-		log.Printf("  - Idle: %d", stats.Idle)
+		logger.Info("✅ Database connected successfully",
+			zap.Int("Open Connections", stats.OpenConnections),
+			zap.Int("In Use", stats.InUse),
+			zap.Int("Idle", stats.Idle))
 	}
 
 	return db

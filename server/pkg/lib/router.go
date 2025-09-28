@@ -4,11 +4,13 @@ import (
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
 
 type RouterParam struct {
 	fx.In
-	Flag *configfx.FlagConfig
+	Flag   *configfx.FlagConfig
+	Logger *zap.Logger
 }
 
 func NewRouter(param RouterParam) *gin.Engine {
@@ -18,6 +20,8 @@ func NewRouter(param RouterParam) *gin.Engine {
 	}
 
 	router := gin.Default()
+
+	param.Logger.Info("Router initialized successfully")
 
 	return router
 }
