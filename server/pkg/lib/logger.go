@@ -30,16 +30,15 @@ func NewLogger(params LoggerParams) *zap.Logger {
 		cfg.OutputPaths = []string{"stdout"}
 	}
 
-	// customize the time format to match Go's standard log
+	// Customize the time format to match Go's standard log
 	cfg.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006/01/02 15:04:05")
 
 	logger, err := cfg.Build()
 	if err != nil {
-		// fallback to a no-op logger if zap fails
+		// Fallback to a no-op logger if zap fails
 		panic("Failed to initialize zap logger: " + err.Error())
 	}
 
-	// Log initialization
 	logger.Info("Logger initialized successfully",
 		zap.String("min_level", cfg.Level.String()),
 		zap.String("format", cfg.Encoding),

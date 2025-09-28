@@ -20,8 +20,11 @@ type AppConfig struct {
 	DBUser     string `env:"DB_USER" envDefault:"postgres"`
 	DBPassword string `env:"DB_PASSWORD" envDefault:"postgres"`
 	DBName     string `env:"DB_NAME" envDefault:"db"`
-	DBPort     int    `env:"DB_PORT" envDefault:"5432"`
+	DBPort     string `env:"DB_PORT" envDefault:"5432"`
 	DBSSLMode  string `env:"DB_SSLMODE" envDefault:"disable"`
+
+	// Server
+	ServerPort string `env:"SERVER_PORT" envDefault:"8080"`
 }
 
 func NewAppConfig(param AppConfigParams) *AppConfig {
@@ -44,6 +47,6 @@ func NewAppConfig(param AppConfigParams) *AppConfig {
 }
 
 func (c *AppConfig) GetDBConfig() string {
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
+	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		c.DBHost, c.DBUser, c.DBPassword, c.DBName, c.DBPort, c.DBSSLMode)
 }
