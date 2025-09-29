@@ -39,7 +39,7 @@ func NewLogger(params LoggerParams) *zap.Logger {
 		panic("Failed to initialize zap logger: " + err.Error())
 	}
 
-	logger.Info("Logger initialized successfully",
+	logger.Info("Logger initialized successfully.",
 		zap.String("min_level", cfg.Level.String()),
 		zap.String("format", cfg.Encoding),
 	)

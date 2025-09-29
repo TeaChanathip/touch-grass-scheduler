@@ -24,15 +24,15 @@ type AppConfig struct {
 	DBSSLMode  string `env:"DB_SSLMODE" envDefault:"disable"`
 
 	// Server
-	ServerPort string `env:"SERVER_PORT" envDefault:"8080"`
+	AppPort string `env:"SERVER_PORT" envDefault:"8080"`
 }
 
-func NewAppConfig(param AppConfigParams) *AppConfig {
+func NewAppConfig(params AppConfigParams) *AppConfig {
 	config := &AppConfig{}
 
 	// Load ENV by the set environment (relative to server root directory)
-	if err := godotenv.Load("env/.env." + param.Flag.Environment); err != nil {
-		log.Fatalf("Error loading .env.%s file: %+v", param.Flag.Environment, err)
+	if err := godotenv.Load("env/.env." + params.Flag.Environment); err != nil {
+		log.Fatalf("Error loading .env.%s file: %+v", params.Flag.Environment, err)
 	}
 
 	/*

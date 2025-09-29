@@ -17,14 +17,14 @@ type DatabaseParams struct {
 	Logger    *zap.Logger
 }
 
-func NewDatabase(param DatabaseParams) *gorm.DB {
-	logger := param.Logger
-	dsn := param.AppConfig.GetDBConfig()
+func NewDatabase(params DatabaseParams) *gorm.DB {
+	logger := params.Logger
+	dsn := params.AppConfig.GetDBConfig()
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		logger.Error("Error connecting to DB", zap.Error(err))
+		logger.Error("Error connecting to DB.", zap.Error(err))
 		os.Exit(1)
 	}
 
@@ -40,12 +40,12 @@ func NewDatabase(param DatabaseParams) *gorm.DB {
 
 		// Test the connection
 		if err := sqlDB.Ping(); err != nil {
-			logger.Error("Database ping failed", zap.Error(err))
+			logger.Error("Database ping failed.", zap.Error(err))
 		}
 
 		// Log connection statistics
 		stats := sqlDB.Stats()
-		logger.Info("✅ Database connected successfully",
+		logger.Info("✅ Database connected successfully.",
 			zap.Int("Open Connections", stats.OpenConnections),
 			zap.Int("In Use", stats.InUse),
 			zap.Int("Idle", stats.Idle))

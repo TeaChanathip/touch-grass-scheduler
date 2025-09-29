@@ -17,24 +17,24 @@ type RouterParam struct {
 	Logger     *zap.Logger
 }
 
-func NewRouter(param RouterParam) *gin.Engine {
+func NewRouter(params RouterParam) *gin.Engine {
 	// Switch from debug mode to release mode in production
-	if param.FlagConfig.Environment == "production" {
+	if params.FlagConfig.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router := gin.Default()
 
 	// Use Logger as Gin middleware
-	router.Use(GinLoggerMiddleware(param.Logger))
+	router.Use(GinLoggerMiddleware(params.Logger))
 
-	param.Logger.Info("Router initialized successfully")
+	params.Logger.Info("Router initialized successfully.")
 
 	return router
 }
 
 func RunRouter(router *gin.Engine, appConfig *configfx.AppConfig) {
-	router.Run(":" + appConfig.ServerPort)
+	router.Run(":" + appConfig.AppPort)
 }
 
 // Custom Gin Middleware for Logger
