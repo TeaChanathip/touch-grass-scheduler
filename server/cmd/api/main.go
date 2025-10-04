@@ -10,12 +10,17 @@ import (
 )
 
 func main() {
-	// Run with FX
+	// Register every module and run with FX
 	fx.New(
+		// Prerequisite
 		configfx.Module,
 		libfx.Module,
+
+		// All routes
 		usersfx.Module,
 		authfx.Module,
+
+		// Forcing router to correctly initialize
 		bootstrapfx.Module,
 	).Run()
 }

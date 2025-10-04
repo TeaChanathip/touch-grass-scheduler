@@ -7,6 +7,7 @@ import (
 
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/models"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/mytypes"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -62,6 +63,11 @@ func (rb RegisterBody) ToUserModel() *models.User {
 	}
 }
 
+type LoginBody struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8,max=64"`
+}
+
 // ======================== METHODS ========================
 
 func (controller *AuthController) Register(ctx *gin.Context) {
@@ -87,8 +93,37 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 	}
 
-	// Remove sensitive attributes
-	publicUser := user.ToPublic()
+	// Generate JWT token
+	token, err := controller.AuthService.GenerateToken(user)
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{
+		"user":  user.ToPublic(),
+		"token": token,
+	})
+}
+
+func (controller *AuthController) Login(ctx *gin.Context) {
+	// Validate request body
+	var loginBody LoginBody
+	if err := ctx.ShouldBindBodyWithJSON(&loginBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := controller.UserService.GetUserByEmail(loginBody.Email)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, "Email not found.")
+		return
+	}
+
+	// Check password
+	if !common.CheckHashedPassword(loginBody.Password, user.Password) {
+		ctx.JSON(http.StatusUnauthorized, "Incorrect password.")
+		return
+	}
 
 	// Generate JWT token
 	token, err := controller.AuthService.GenerateToken(user)
@@ -97,7 +132,7 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
-		"user":  publicUser,
+		"user":  user.ToPublic(),
 		"token": token,
 	})
 }

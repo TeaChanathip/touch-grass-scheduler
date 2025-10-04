@@ -42,3 +42,12 @@ func (service *UserService) CreateUser(user *models.User) error {
 
 	return result.Error
 }
+
+func (service *UserService) GetUserByEmail(email string) (*models.User, error) {
+	var user models.User
+
+	// Query by email
+	result := service.DB.Where("email = ?", email).First(&user)
+
+	return &user, result.Error
+}

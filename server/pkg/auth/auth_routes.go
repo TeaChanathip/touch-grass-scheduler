@@ -30,4 +30,5 @@ func NewAuthRoutes(params AuthRoutesParams) *AuthRoutes {
 func (routes *AuthRoutes) Setup() {
 	routes.Logger.Info("Setting up [Auth] routes.")
 	routes.Router.POST("/register", routes.AuthController.Register)
+	routes.Router.POST("/login", routes.AuthController.Login)
 }
