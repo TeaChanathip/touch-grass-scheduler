@@ -33,10 +33,6 @@ func NewRouter(params RouterParam) *gin.Engine {
 	return router
 }
 
-func RunRouter(router *gin.Engine, appConfig *configfx.AppConfig) {
-	router.Run(":" + appConfig.AppPort)
-}
-
 // Custom Gin Middleware for Logger
 func GinLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -1,12 +1,10 @@
-package libfx
+package usersfx
 
 import "go.uber.org/fx"
 
 var Module = fx.Module(
-	"libfx",
+	"userfx",
 	fx.Provide(
-		NewLogger,
-		NewDatabase,
-		NewRouter,
+		NewUserService,
 	),
 )

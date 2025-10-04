@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     "phone" VARCHAR(15) NOT NULL,
     "gender" gender NOT NULL,
     "email" VARCHAR(255) NOT NULL,
-    "password" VARCHAR(255) NOT NULL,
+    "password" VARCHAR(60) NOT NULL,
     "avatar_url" VARCHAR(512) DEFAULT NULL,
     "school_num" VARCHAR(16) DEFAULT NULL,
     UNIQUE("email")

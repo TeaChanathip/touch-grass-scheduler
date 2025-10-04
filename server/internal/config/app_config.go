@@ -24,7 +24,9 @@ type AppConfig struct {
 	DBSSLMode  string `env:"DB_SSLMODE" envDefault:"disable"`
 
 	// Server
-	AppPort string `env:"SERVER_PORT" envDefault:"8080"`
+	AppPort      string `env:"SERVER_PORT" envDefault:"8080"`
+	JWTSecret    string `env:"JWT_SECRET,required"`
+	JWTExpiresIn int    `env:"JWT_EXPIRES_IN" envDefault:"24"`
 }
 
 func NewAppConfig(params AppConfigParams) *AppConfig {
