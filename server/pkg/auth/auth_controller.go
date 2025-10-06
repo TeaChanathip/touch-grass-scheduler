@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/models"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
 	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"

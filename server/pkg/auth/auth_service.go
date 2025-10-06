@@ -4,8 +4,8 @@ import (
 	"time"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
-	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/models"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
 	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/fx"
