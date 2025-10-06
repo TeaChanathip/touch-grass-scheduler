@@ -18,9 +18,12 @@ type RouterParam struct {
 }
 
 func NewRouter(params RouterParam) *gin.Engine {
-	// Switch from debug mode to release mode in production
-	if params.FlagConfig.Environment == "production" {
+	// Set mode accroding to environment
+	switch params.FlagConfig.Environment {
+	case "production":
 		gin.SetMode(gin.ReleaseMode)
+	case "test":
+		gin.SetMode(gin.TestMode)
 	}
 
 	router := gin.New()
