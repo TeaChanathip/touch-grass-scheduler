@@ -6,7 +6,7 @@ import (
 	"slices"
 
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/models"
-	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/mytypes"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
 	"github.com/gin-gonic/gin"
@@ -38,15 +38,15 @@ func NewAuthController(params AuthControllerParams) *AuthController {
 // ======================== REQUEST BODY ========================
 
 type RegisterBody struct {
-	Role       mytypes.UserRole   `json:"role" binding:"required,oneof='student' 'teacher' 'guardian'"` // Not allow Admin to be registered
-	FirstName  string             `json:"first_name" binding:"required,max=128,alpha"`
-	MiddleName string             `json:"middle_name" binding:"omitempty,max=128,alpha"`
-	LastName   string             `json:"last_name" binding:"omitempty,max=128,alpha"`
-	Phone      string             `json:"phone" binding:"required,e164"`
-	Gender     mytypes.UserGender `json:"gender" binding:"required,oneof=''male' 'female' 'other prefer_not_to_say'"`
-	Email      string             `json:"email" binding:"required,email"`
-	Password   string             `json:"password" binding:"required,min=8,max=64"`
-	SchoolNum  string             `json:"school_num" binding:"omitempty,number,max=16"` // Be either student_num or teacher_num
+	Role       types.UserRole   `json:"role" binding:"required,oneof='student' 'teacher' 'guardian'"` // Not allow Admin to be registered
+	FirstName  string           `json:"first_name" binding:"required,max=128,alpha"`
+	MiddleName string           `json:"middle_name" binding:"omitempty,max=128,alpha"`
+	LastName   string           `json:"last_name" binding:"omitempty,max=128,alpha"`
+	Phone      string           `json:"phone" binding:"required,e164"`
+	Gender     types.UserGender `json:"gender" binding:"required,oneof=''male' 'female' 'other prefer_not_to_say'"`
+	Email      string           `json:"email" binding:"required,email"`
+	Password   string           `json:"password" binding:"required,min=8,max=64"`
+	SchoolNum  string           `json:"school_num" binding:"omitempty,number,max=16"` // Be either student_num or teacher_num
 }
 
 func (rb RegisterBody) ToUserModel() *models.User {
@@ -74,33 +74,27 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 	// Validate request body
 	var registerBody RegisterBody
 	if err := ctx.ShouldBindBodyWithJSON(&registerBody); err != nil {
+		controller.Logger.Debug("Validation error on register request", zap.Error(err))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Validate school number requirements
 	if err := validateSchoolNum(registerBody); err != nil {
+		controller.Logger.Debug("Validation error on register request", zap.Error(err))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// TODO: Add logic to check if SchoolNumber is valid
-	// TODO: Send the verification link to the user's email
-
-	// Create new user
-	user := registerBody.ToUserModel()
-	if err := controller.UserService.CreateUser(user); err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-	}
-
-	// Generate JWT token
-	token, err := controller.AuthService.GenerateToken(user)
+	// Business logic
+	user, token, err := controller.AuthService.Register(registerBody)
 	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		common.HandleBusinessLogicErr(ctx, err)
+		return
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
-		"user":  user.ToPublic(),
+		"user":  user,
 		"token": token,
 	})
 }
@@ -109,40 +103,30 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 	// Validate request body
 	var loginBody LoginBody
 	if err := ctx.ShouldBindBodyWithJSON(&loginBody); err != nil {
+		controller.Logger.Debug("Validation error on login request", zap.Error(err))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, err := controller.UserService.GetUserByEmail(loginBody.Email)
+	// Business logic
+	user, token, err := controller.AuthService.Login(loginBody)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, "Email not found.")
+		common.HandleBusinessLogicErr(ctx, err)
 		return
 	}
 
-	// Check password
-	if !common.CheckHashedPassword(loginBody.Password, user.Password) {
-		ctx.JSON(http.StatusUnauthorized, "Incorrect password.")
-		return
-	}
-
-	// Generate JWT token
-	token, err := controller.AuthService.GenerateToken(user)
-	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-	}
-
-	ctx.JSON(http.StatusCreated, gin.H{
-		"user":  user.ToPublic(),
+	ctx.JSON(http.StatusOK, gin.H{
+		"user":  user,
 		"token": token,
 	})
 }
 
-// ======================== Helper Functions ========================
+// ======================== HELPER FUNCTIONS ========================
 
 func validateSchoolNum(registerBody RegisterBody) error {
-	schoolPersonnelRoles := []mytypes.UserRole{
-		mytypes.UserRoleStudent,
-		mytypes.UserRoleTeacher,
+	schoolPersonnelRoles := []types.UserRole{
+		types.UserRoleStudent,
+		types.UserRoleTeacher,
 	}
 
 	isSchoolPersonnel := slices.Contains(schoolPersonnelRoles, registerBody.Role)

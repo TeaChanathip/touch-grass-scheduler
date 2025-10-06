@@ -1,4 +1,4 @@
-package mytypes
+package types
 
 type UserRole BaseStringEnum
 

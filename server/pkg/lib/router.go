@@ -23,9 +23,10 @@ func NewRouter(params RouterParam) *gin.Engine {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
 
-	// Use Logger as Gin middleware
+	// Use Custom Logger
 	router.Use(GinLoggerMiddleware(params.Logger))
 
 	params.Logger.Info("Router initialized successfully.")
