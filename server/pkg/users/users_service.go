@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/models"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"

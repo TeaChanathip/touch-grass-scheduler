@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"slices"
 
+	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
@@ -16,12 +17,16 @@ import (
 
 type AuthControllerParams struct {
 	fx.In
+	FlagConfig  *configfx.FlagConfig
+	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
 	AuthService *AuthService
 	UserService *usersfx.UserService
 }
 
 type AuthController struct {
+	FlagConfig  *configfx.FlagConfig
+	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
 	AuthService *AuthService
 	UserService *usersfx.UserService
@@ -29,6 +34,8 @@ type AuthController struct {
 
 func NewAuthController(params AuthControllerParams) *AuthController {
 	return &AuthController{
+		FlagConfig:  params.FlagConfig,
+		AppConfig:   params.AppConfig,
 		Logger:      params.Logger,
 		AuthService: params.AuthService,
 		UserService: params.UserService,
@@ -93,9 +100,10 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
+	controller.setCookie(ctx, token)
+
 	ctx.JSON(http.StatusCreated, gin.H{
-		"user":  user,
-		"token": token,
+		"user": user,
 	})
 }
 
@@ -115,10 +123,28 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
+	controller.setCookie(ctx, token)
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"user":  user,
-		"token": token,
+		"user": user,
 	})
+}
+
+// ======================== HELPER METHODS ========================
+
+func (controller *AuthController) setCookie(ctx *gin.Context, token string) {
+	isProduction := controller.FlagConfig.Environment == "production"
+	maxAge := controller.AppConfig.JWTExpiresIn * 3600
+
+	ctx.SetCookie(
+		"token",      // name
+		token,        // value
+		maxAge,       // maxAge (seoconds)
+		"/",          // path
+		"",           // current domain
+		isProduction, // set to true in production with HTTPS
+		true,         // httpOnly
+	)
 }
 
 // ======================== HELPER FUNCTIONS ========================
