@@ -22,6 +22,14 @@ type UserService struct {
 	DB     *gorm.DB
 }
 
+type UserServiceInterface interface {
+	CreateUser(user *models.User) error
+	GetUserByEmail(email string) (*models.User, error)
+}
+
+// Verify interface implementation at compile time
+var _ UserServiceInterface = (*UserService)(nil)
+
 func NewUserService(params UserServiceParams) *UserService {
 	return &UserService{
 		Logger: params.Logger,

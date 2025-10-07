@@ -1,4 +1,4 @@
-CREATE TYPE gender AS ENUM('male', 'female', 'other', 'prefer not to say');
+CREATE TYPE gender AS ENUM('male', 'female', 'other', 'prefer_not_to_say');
 CREATE TYPE role AS ENUM('student', 'teacher', 'guardian', 'admin');
 
 -- Entities

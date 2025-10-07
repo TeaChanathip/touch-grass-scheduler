@@ -9,7 +9,6 @@ import (
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
-	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -21,7 +20,6 @@ type AuthControllerParams struct {
 	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
 	AuthService *AuthService
-	UserService *usersfx.UserService
 }
 
 type AuthController struct {
@@ -29,7 +27,6 @@ type AuthController struct {
 	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
 	AuthService *AuthService
-	UserService *usersfx.UserService
 }
 
 func NewAuthController(params AuthControllerParams) *AuthController {
@@ -38,7 +35,6 @@ func NewAuthController(params AuthControllerParams) *AuthController {
 		AppConfig:   params.AppConfig,
 		Logger:      params.Logger,
 		AuthService: params.AuthService,
-		UserService: params.UserService,
 	}
 }
 
@@ -50,7 +46,7 @@ type RegisterBody struct {
 	MiddleName string           `json:"middle_name" binding:"omitempty,max=128,alpha"`
 	LastName   string           `json:"last_name" binding:"omitempty,max=128,alpha"`
 	Phone      string           `json:"phone" binding:"required,e164"`
-	Gender     types.UserGender `json:"gender" binding:"required,oneof=''male' 'female' 'other prefer_not_to_say'"`
+	Gender     types.UserGender `json:"gender" binding:"required,oneof=''male' 'female' 'other' 'prefer_not_to_say'"`
 	Email      string           `json:"email" binding:"required,email"`
 	Password   string           `json:"password" binding:"required,min=8,max=64"`
 	SchoolNum  string           `json:"school_num" binding:"omitempty,number,max=16"` // Be either student_num or teacher_num

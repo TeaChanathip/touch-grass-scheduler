@@ -10,29 +10,25 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type AuthServiceParams struct {
 	fx.In
 	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
-	DB          *gorm.DB
-	UserService *usersfx.UserService
+	UserService usersfx.UserServiceInterface
 }
 
 type AuthService struct {
 	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
-	DB          *gorm.DB
-	UserService *usersfx.UserService
+	UserService usersfx.UserServiceInterface
 }
 
 func NewAuthService(params AuthServiceParams) *AuthService {
 	return &AuthService{
 		AppConfig:   params.AppConfig,
 		Logger:      params.Logger,
-		DB:          params.DB,
 		UserService: params.UserService,
 	}
 }
