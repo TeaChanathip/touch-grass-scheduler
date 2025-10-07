@@ -8,7 +8,7 @@ import (
 	authfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/auth"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
-	"github.com/TeaChanathip/touch-grass-scheduler/server/test/mocks"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/test/unit/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -91,6 +91,8 @@ func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 	// Verify the mock was called exactly once
 	mockUserService.AssertExpectations(t)
 }
+
+func TestAuthService_Register_DatabaseError(t *testing.T) {}
 
 // ======================== LOGIN ========================
 
@@ -187,3 +189,5 @@ func TestAuthService_Login_InvalidPassword(t *testing.T) {
 	// Verify the mock was called exactly once
 	mockUserService.AssertExpectations(t)
 }
+
+func TestAuthService_Login_DatabaseError(t *testing.T) {}

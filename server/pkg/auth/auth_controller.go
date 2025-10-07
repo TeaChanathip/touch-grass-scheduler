@@ -19,14 +19,14 @@ type AuthControllerParams struct {
 	FlagConfig  *configfx.FlagConfig
 	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
-	AuthService *AuthService
+	AuthService AuthServiceInterface
 }
 
 type AuthController struct {
 	FlagConfig  *configfx.FlagConfig
 	AppConfig   *configfx.AppConfig
 	Logger      *zap.Logger
-	AuthService *AuthService
+	AuthService AuthServiceInterface
 }
 
 func NewAuthController(params AuthControllerParams) *AuthController {

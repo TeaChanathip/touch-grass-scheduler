@@ -30,7 +30,7 @@ type UserServiceInterface interface {
 // Verify interface implementation at compile time
 var _ UserServiceInterface = (*UserService)(nil)
 
-func NewUserService(params UserServiceParams) *UserService {
+func NewUserService(params UserServiceParams) UserServiceInterface {
 	return &UserService{
 		Logger: params.Logger,
 		DB:     params.DB,

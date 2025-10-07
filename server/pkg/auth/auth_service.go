@@ -25,7 +25,15 @@ type AuthService struct {
 	UserService usersfx.UserServiceInterface
 }
 
-func NewAuthService(params AuthServiceParams) *AuthService {
+// Verify interface implementation at compile time
+var _ AuthServiceInterface = (*AuthService)(nil)
+
+type AuthServiceInterface interface {
+	Register(body RegisterBody) (*models.PublicUser, string, error)
+	Login(body LoginBody) (*models.PublicUser, string, error)
+}
+
+func NewAuthService(params AuthServiceParams) AuthServiceInterface {
 	return &AuthService{
 		AppConfig:   params.AppConfig,
 		Logger:      params.Logger,
@@ -35,12 +43,12 @@ func NewAuthService(params AuthServiceParams) *AuthService {
 
 // ======================== METHODS ========================
 
-func (service *AuthService) Register(registerBody RegisterBody) (*models.PublicUser, string, error) {
+func (service *AuthService) Register(body RegisterBody) (*models.PublicUser, string, error) {
 	// TODO: Add logic to check if SchoolNumber is valid
 	// TODO: Send the verification link to the user's email
 
 	// Create new user
-	user := registerBody.ToUserModel()
+	user := body.ToUserModel()
 	if err := service.UserService.CreateUser(user); err != nil {
 		return nil, "", err
 	}
@@ -54,14 +62,14 @@ func (service *AuthService) Register(registerBody RegisterBody) (*models.PublicU
 	return user.ToPublic(), token, nil
 }
 
-func (service *AuthService) Login(loginBody LoginBody) (*models.PublicUser, string, error) {
-	user, err := service.UserService.GetUserByEmail(loginBody.Email)
+func (service *AuthService) Login(body LoginBody) (*models.PublicUser, string, error) {
+	user, err := service.UserService.GetUserByEmail(body.Email)
 	if err != nil {
 		return nil, "", common.ErrInvalidCredentials
 	}
 
 	// Compare password with hashed
-	if !common.CheckHashedPassword(loginBody.Password, user.Password) {
+	if !common.CheckHashedPassword(body.Password, user.Password) {
 		return nil, "", common.ErrInvalidCredentials
 	}
 
