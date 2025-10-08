@@ -16,7 +16,7 @@ import (
 // ======================== REGISTER ========================
 
 func TestAuthService_Register_Success(t *testing.T) {
-	// Arrange
+	// ------------------ Arrange ------------------
 	mockUserService := new(mocks.MockUserService)
 	authService := &authfx.AuthService{
 		UserService: mockUserService,
@@ -26,7 +26,7 @@ func TestAuthService_Register_Success(t *testing.T) {
 		},
 	}
 
-	registerBody := authfx.RegisterBody{
+	registerBody := &authfx.RegisterBody{
 		Role:      types.UserRoleStudent,
 		FirstName: "John",
 		LastName:  "Smith",
@@ -40,10 +40,10 @@ func TestAuthService_Register_Success(t *testing.T) {
 	// Setup mock expectation
 	mockUserService.On("CreateUser", mock.AnythingOfType("*models.User")).Return(nil)
 
-	// Act
+	// ------------------ Act ----------------------
 	user, token, err := authService.Register(registerBody)
 
-	// Assert
+	// ------------------ Assert -------------------
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.NotEmpty(t, token)
@@ -61,11 +61,11 @@ func TestAuthService_Register_Success(t *testing.T) {
 }
 
 func TestAuthService_Register_DuplicateEmail(t *testing.T) {
-	// Arrange
+	// ------------------ Arrange ------------------
 	mockUserService := new(mocks.MockUserService)
 	authService := &authfx.AuthService{UserService: mockUserService}
 
-	registerBody := authfx.RegisterBody{
+	registerBody := &authfx.RegisterBody{
 		Role:      types.UserRoleStudent,
 		FirstName: "John",
 		LastName:  "Smith",
@@ -79,10 +79,10 @@ func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 	// Setup mock expectation
 	mockUserService.On("CreateUser", mock.AnythingOfType("*models.User")).Return(common.ErrDuplicatedEmail)
 
-	// Act
+	// ------------------ Act ----------------------
 	user, token, err := authService.Register(registerBody)
 
-	// Assert
+	// ------------------ Assert -------------------
 	assert.Error(t, err)
 	assert.Equal(t, common.ErrDuplicatedEmail, err)
 	assert.Nil(t, user)
@@ -97,7 +97,7 @@ func TestAuthService_Register_DatabaseError(t *testing.T) {}
 // ======================== LOGIN ========================
 
 func TestAuthService_Login_Success(t *testing.T) {
-	// Arrange
+	// ------------------ Arrange ------------------
 	mockUserService := new(mocks.MockUserService)
 	authService := &authfx.AuthService{
 		UserService: mockUserService,
@@ -107,7 +107,7 @@ func TestAuthService_Login_Success(t *testing.T) {
 		},
 	}
 
-	loginBody := authfx.LoginBody{
+	loginBody := &authfx.LoginBody{
 		Email:    "johnsmith@gmail.com",
 		Password: "12345678",
 	}
@@ -120,10 +120,10 @@ func TestAuthService_Login_Success(t *testing.T) {
 	// Setup mock expectation
 	mockUserService.On("GetUserByEmail", "johnsmith@gmail.com").Return(expectedUser, nil)
 
-	// Act
+	// ------------------ Act ----------------------
 	user, token, err := authService.Login(loginBody)
 
-	// Assert
+	// ------------------ Assert -------------------
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.NotEmpty(t, token)
@@ -134,11 +134,11 @@ func TestAuthService_Login_Success(t *testing.T) {
 }
 
 func TestAuthService_Login_EmailNotExist(t *testing.T) {
-	// Arrange
+	// ------------------ Arrange ------------------
 	mockUserService := new(mocks.MockUserService)
 	authService := &authfx.AuthService{UserService: mockUserService}
 
-	loginBody := authfx.LoginBody{
+	loginBody := &authfx.LoginBody{
 		Email:    "johnsmith@gmail.com",
 		Password: "12345678",
 	}
@@ -146,10 +146,10 @@ func TestAuthService_Login_EmailNotExist(t *testing.T) {
 	// Setup mock expectation
 	mockUserService.On("GetUserByEmail", "johnsmith@gmail.com").Return(nil, common.ErrUserNotFound)
 
-	// Act
+	// ------------------ Act ----------------------
 	user, token, err := authService.Login(loginBody)
 
-	// Assert
+	// ------------------ Assert -------------------
 	assert.Error(t, err)
 	assert.Equal(t, common.ErrInvalidCredentials, err)
 	assert.Nil(t, user)
@@ -160,11 +160,11 @@ func TestAuthService_Login_EmailNotExist(t *testing.T) {
 }
 
 func TestAuthService_Login_InvalidPassword(t *testing.T) {
-	// Arrange
+	// ------------------ Arrange ------------------
 	mockUserService := new(mocks.MockUserService)
 	authService := &authfx.AuthService{UserService: mockUserService}
 
-	loginBody := authfx.LoginBody{
+	loginBody := &authfx.LoginBody{
 		Email:    "johnsmith@gmail.com",
 		Password: "12345678",
 	}
@@ -177,10 +177,10 @@ func TestAuthService_Login_InvalidPassword(t *testing.T) {
 	// Setup mock expectation
 	mockUserService.On("GetUserByEmail", "johnsmith@gmail.com").Return(expectedUser, nil)
 
-	// Act
+	// ------------------ Act ----------------------
 	user, token, err := authService.Login(loginBody)
 
-	// Assert
+	// ------------------ Assert -------------------
 	assert.Error(t, err)
 	assert.Equal(t, common.ErrInvalidCredentials, err)
 	assert.Nil(t, user)
