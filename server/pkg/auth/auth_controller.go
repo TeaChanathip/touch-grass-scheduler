@@ -96,10 +96,17 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	controller.setCookie(ctx, token)
+	// Convert user struct to map with snake_case key
+	userMap, err := common.StructToSnakeMap(user)
+	if err != nil {
+		controller.Logger.Error("Internal error while converting user struct to map:", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+		return
+	}
 
+	controller.setCookie(ctx, token)
 	ctx.JSON(http.StatusCreated, gin.H{
-		"user": user,
+		"user": userMap,
 	})
 }
 
@@ -119,10 +126,17 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	controller.setCookie(ctx, token)
+	// Convert user struct to map with snake_case key
+	userMap, err := common.StructToSnakeMap(user)
+	if err != nil {
+		controller.Logger.Error("Internal error while converting user struct to map:", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+		return
+	}
 
+	controller.setCookie(ctx, token)
 	ctx.JSON(http.StatusOK, gin.H{
-		"user": user,
+		"user": userMap,
 	})
 }
 

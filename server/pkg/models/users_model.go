@@ -21,19 +21,19 @@ type User struct {
 
 // Remove sensitive fields e.g. password
 type PublicUser struct {
-	ID         uuid.UUID
-	Role       types.UserRole
-	FirstName  string
-	MiddleName string
-	LastName   string
-	Phone      string
-	Gender     types.UserGender
-	Email      string
-	AvatarUrl  string
-	SchoolNum  string
+	ID         uuid.UUID        `json:"id"`
+	Role       types.UserRole   `json:"role"`
+	FirstName  string           `json:"first_name"`
+	MiddleName string           `json:"middle_name"`
+	LastName   string           `json:"last_name"`
+	Phone      string           `json:"phone"`
+	Gender     types.UserGender `json:"gender"`
+	Email      string           `json:"email"`
+	AvatarUrl  string           `json:"avartar_url"`
+	SchoolNum  string           `json:"school_num"`
 }
 
-func (u User) ToPublic() *PublicUser {
+func (u *User) ToPublic() *PublicUser {
 	return &PublicUser{
 		ID:         u.ID,
 		Role:       u.Role,

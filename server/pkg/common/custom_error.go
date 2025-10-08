@@ -37,6 +37,6 @@ func HandleBusinessLogicErr(ctx *gin.Context, err error) {
 	if customErr, ok := err.(CustomError); ok {
 		ctx.JSON(customErr.StatusCode, gin.H{"error": customErr.Error()})
 	} else {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unknown error"})
 	}
 }
