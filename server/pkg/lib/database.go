@@ -45,7 +45,7 @@ func NewDatabase(params DatabaseParams) *gorm.DB {
 
 		// Log connection statistics
 		stats := sqlDB.Stats()
-		logger.Info("✅ Database connected successfully.",
+		logger.Info("Database connected successfully.",
 			zap.Int("Open Connections", stats.OpenConnections),
 			zap.Int("In Use", stats.InUse),
 			zap.Int("Idle", stats.Idle))

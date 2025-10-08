@@ -1,10 +1,14 @@
 package libfx
 
 import (
+	"reflect"
+	"strings"
 	"time"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -30,7 +34,18 @@ func NewRouter(params RouterParam) *gin.Engine {
 	router.Use(gin.Recovery())
 
 	// Use Custom Logger
-	router.Use(GinLoggerMiddleware(params.Logger))
+	router.Use(ginLoggerMiddleware(params.Logger))
+
+	// Use field name specified for JSON in validation
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+			name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+			if name == "-" {
+				return ""
+			}
+			return name
+		})
+	}
 
 	params.Logger.Info("Router initialized successfully.")
 
@@ -38,7 +53,7 @@ func NewRouter(params RouterParam) *gin.Engine {
 }
 
 // Custom Gin Middleware for Logger
-func GinLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
+func ginLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path

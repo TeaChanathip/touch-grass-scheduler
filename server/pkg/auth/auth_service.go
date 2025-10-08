@@ -29,8 +29,8 @@ type AuthService struct {
 var _ AuthServiceInterface = (*AuthService)(nil)
 
 type AuthServiceInterface interface {
-	Register(body RegisterBody) (*models.PublicUser, string, error)
-	Login(body LoginBody) (*models.PublicUser, string, error)
+	Register(body *RegisterBody) (*models.PublicUser, string, error)
+	Login(body *LoginBody) (*models.PublicUser, string, error)
 }
 
 func NewAuthService(params AuthServiceParams) AuthServiceInterface {
@@ -43,7 +43,7 @@ func NewAuthService(params AuthServiceParams) AuthServiceInterface {
 
 // ======================== METHODS ========================
 
-func (service *AuthService) Register(body RegisterBody) (*models.PublicUser, string, error) {
+func (service *AuthService) Register(body *RegisterBody) (*models.PublicUser, string, error) {
 	// TODO: Add logic to check if SchoolNumber is valid
 	// TODO: Send the verification link to the user's email
 
@@ -62,7 +62,7 @@ func (service *AuthService) Register(body RegisterBody) (*models.PublicUser, str
 	return user.ToPublic(), token, nil
 }
 
-func (service *AuthService) Login(body LoginBody) (*models.PublicUser, string, error) {
+func (service *AuthService) Login(body *LoginBody) (*models.PublicUser, string, error) {
 	user, err := service.UserService.GetUserByEmail(body.Email)
 	if err != nil {
 		return nil, "", common.ErrInvalidCredentials

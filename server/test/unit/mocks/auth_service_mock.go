@@ -12,7 +12,7 @@ type MockAuthService struct {
 
 var _ authfx.AuthServiceInterface = (*MockAuthService)(nil)
 
-func (m *MockAuthService) Register(body authfx.RegisterBody) (*models.PublicUser, string, error) {
+func (m *MockAuthService) Register(body *authfx.RegisterBody) (*models.PublicUser, string, error) {
 	args := m.Called(body)
 
 	if args.Get(0) == nil {
@@ -22,7 +22,7 @@ func (m *MockAuthService) Register(body authfx.RegisterBody) (*models.PublicUser
 	return args.Get(0).(*models.PublicUser), args.String(1), args.Error(2)
 }
 
-func (m *MockAuthService) Login(body authfx.LoginBody) (*models.PublicUser, string, error) {
+func (m *MockAuthService) Login(body *authfx.LoginBody) (*models.PublicUser, string, error) {
 	args := m.Called(body)
 
 	if args.Get(0) == nil {

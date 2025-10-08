@@ -74,13 +74,9 @@ type LoginBody struct {
 // ======================== METHODS ========================
 
 func (controller *AuthController) Register(ctx *gin.Context) {
-	// Validate request body
-	var registerBody RegisterBody
-	if err := ctx.ShouldBindBodyWithJSON(&registerBody); err != nil {
-		controller.Logger.Debug("Validation error on register request", zap.Error(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	// Get validated body from context that set by RequestBodyValidator
+	validatedBody, _ := ctx.Get("validatedBody")
+	registerBody, _ := validatedBody.(*RegisterBody)
 
 	// Validate school number requirements
 	if err := validateSchoolNum(registerBody); err != nil {
@@ -111,13 +107,9 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 }
 
 func (controller *AuthController) Login(ctx *gin.Context) {
-	// Validate request body
-	var loginBody LoginBody
-	if err := ctx.ShouldBindBodyWithJSON(&loginBody); err != nil {
-		controller.Logger.Debug("Validation error on login request", zap.Error(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	// Get validated body from context that set by RequestBodyValidator
+	validatedBody, _ := ctx.Get("validatedBody")
+	loginBody, _ := validatedBody.(*LoginBody)
 
 	// Business logic
 	user, token, err := controller.AuthService.Login(loginBody)
@@ -159,7 +151,7 @@ func (controller *AuthController) setCookie(ctx *gin.Context, token string) {
 
 // ======================== HELPER FUNCTIONS ========================
 
-func validateSchoolNum(registerBody RegisterBody) error {
+func validateSchoolNum(registerBody *RegisterBody) error {
 	schoolPersonnelRoles := []types.UserRole{
 		types.UserRoleStudent,
 		types.UserRoleTeacher,
