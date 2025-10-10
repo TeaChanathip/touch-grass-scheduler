@@ -11,7 +11,7 @@ const eslintConfig = [
         ignores: [".next/**", "node_modules/**", "out/**", "build/**"],
     },
     ...compat.config({
-        extends: ["eslint:recommended", "next"],
+        extends: ["eslint:recommended", "next", "prettier"],
     }),
 ];
 
