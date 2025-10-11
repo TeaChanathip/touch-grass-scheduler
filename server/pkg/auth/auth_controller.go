@@ -100,9 +100,9 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 		return
 	}
 
-	controller.setCookie(ctx, token)
 	ctx.JSON(http.StatusCreated, gin.H{
-		"user": userMap,
+		"user":  userMap,
+		"token": token,
 	})
 }
 
@@ -126,27 +126,10 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 		return
 	}
 
-	controller.setCookie(ctx, token)
 	ctx.JSON(http.StatusOK, gin.H{
-		"user": userMap,
+		"user":  userMap,
+		"token": token,
 	})
-}
-
-// ======================== HELPER METHODS ========================
-
-func (controller *AuthController) setCookie(ctx *gin.Context, token string) {
-	isProduction := controller.FlagConfig.Environment == "production"
-	maxAge := controller.AppConfig.JWTExpiresIn * 3600
-
-	ctx.SetCookie(
-		"token",      // name
-		token,        // value
-		maxAge,       // maxAge (seoconds)
-		"/",          // path
-		"",           // current domain
-		isProduction, // set to true in production with HTTPS
-		true,         // httpOnly
-	)
 }
 
 // ======================== HELPER FUNCTIONS ========================

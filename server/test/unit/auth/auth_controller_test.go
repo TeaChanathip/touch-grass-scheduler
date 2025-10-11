@@ -77,15 +77,14 @@ func TestAuthController_Register_Success(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &responseBody)
 	assert.NoError(t, err)
 
-	// Verify cookie
-	cookies := w.Result().Cookies()
-	assert.NotEmpty(t, cookies)
-	assert.Equal(t, "testtokenvalue", cookies[0].Value)
-
-	// Verify response body
+	// Verify user
 	assert.Contains(t, responseBody, "user")
 	userMap, _ := responseBody["user"].(map[string]any)
 	assert.Equal(t, "johnsmith@gmail.com", userMap["email"])
+
+	// Verify token
+	assert.Contains(t, responseBody, "token")
+	assert.Equal(t, responseBody["token"], "testtokenvalue")
 
 	// Verify mock was called
 	mockAuthService.AssertExpectations(t)
@@ -272,15 +271,14 @@ func TestAuthController_Login_Success(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &responseBody)
 	assert.NoError(t, err)
 
-	// Verify cookie
-	cookies := w.Result().Cookies()
-	assert.NotEmpty(t, cookies)
-	assert.Equal(t, "testtokenvalue", cookies[0].Value)
-
-	// Verify response body
+	// Verify user
 	assert.Contains(t, responseBody, "user")
 	userMap, _ := responseBody["user"].(map[string]any)
 	assert.Equal(t, "johnsmith@gmail.com", userMap["email"])
+
+	// Verify token
+	assert.Contains(t, responseBody, "token")
+	assert.Equal(t, responseBody["token"], "testtokenvalue")
 
 	// Verify mock was called
 	mockAuthService.AssertExpectations(t)
