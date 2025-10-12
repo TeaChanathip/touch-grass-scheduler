@@ -3,15 +3,15 @@
 import Image from "next/image"
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded"
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 
-interface Route {
+interface Path {
     title: string
-    route: string
+    path: string
 }
 
-interface RouteItem extends Route {
+interface NavItem extends Path {
     id: string
 }
 
@@ -23,15 +23,18 @@ export default function Navbar() {
         setShow(false)
     }, [pathname])
 
-    const routes: Route[] = [
-        { title: "Login", route: "/login" },
-        { title: "Route1", route: "/" },
-        { title: "Route2", route: "/" },
-        { title: "Route3", route: "/" },
+    const routes: Path[] = [
+        { title: "Login", path: "/login" },
+        { title: "Route1", path: "/" },
+        { title: "Route2", path: "/" },
+        { title: "Route3", path: "/" },
+        { title: "Route4", path: "/" },
+        { title: "Route5", path: "/" },
+        { title: "Route6", path: "/" },
     ]
 
     // Generate unique id to be used as key
-    const routeItems: RouteItem[] = routes.map((route) => {
+    const routeItems: NavItem[] = routes.map((route) => {
         return { ...route, id: crypto.randomUUID() }
     })
 
@@ -59,35 +62,46 @@ export default function Navbar() {
                         setShow(!isShow)
                     }}
                 >
-                    <MenuRoundedIcon fontSize="large" className="text-white" />
+                    <MenuRoundedIcon
+                        fontSize="large"
+                        className="text-white [&:hover,&:focus]:text-prim-green-500 cursor-pointer"
+                    />
                 </button>
             </header>
-            <NavPanel routeItems={routeItems} isShow={isShow} />
+            <NavPanel navItems={routeItems} isShow={isShow} />
         </>
     )
 }
 
-function NavPanel(props: { routeItems: RouteItem[]; isShow: boolean }) {
+function NavPanel(props: { navItems: NavItem[]; isShow: boolean }) {
+    const pathname = usePathname()
+
     return (
         <aside
-            className="fixed h-full w-full bg-prim-green-500/90 transition-all ease-in"
-            style={{ left: props.isShow ? "0" : "100vw" }}
+            className="fixed h-full w-full lg:w-[400px] right-0 bg-prim-green-500/90 transition-all ease-in overflow-y-auto custom-scrollbar"
+            style={
+                props.isShow
+                    ? { transform: "none" }
+                    : { transform: "translateX(100%)" }
+            }
         >
             <nav>
                 <ul className="mt-8 mx-8 flex flex-col gap-4 text-prim-dark">
-                    {props.routeItems.map((routeItem) => (
-                        <li
-                            key={routeItem.id}
-                            className="bg-prim-green-100 h-14 rounded-xl text-2xl"
-                        >
-                            <Link
-                                href={routeItem.route}
-                                className="size-full px-5 flex items-center"
+                    {props.navItems
+                        .filter((item) => item.path != pathname)
+                        .map((item) => (
+                            <li
+                                key={item.id}
+                                className="bg-prim-green-100 [&:hover,&:focus]:bg-prim-green-500 h-14 rounded-xl text-2xl drop-shadow-md"
                             >
-                                {routeItem.title}
-                            </Link>
-                        </li>
-                    ))}
+                                <Link
+                                    href={item.path}
+                                    className="size-full px-5 flex items-center"
+                                >
+                                    {item.title}
+                                </Link>
+                            </li>
+                        ))}
                 </ul>
             </nav>
         </aside>

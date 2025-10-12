@@ -8,6 +8,15 @@
     /* color */
     --color-prim-dark: #525252;
     --color-prim-green-100: #dce1da;
+    --color-prim-green-400: #86a789;
     --color-prim-green-500: #909b8c;
+    --color-prim-green-700: #4b5e4d;
     --color-prim-green-800: #334a36;
+}
+
+.custom-scrollbar {
+    overflow-y: scroll;
+    scrollbar-color: var(--color-prim-green-700) rgb(0, 0, 0, 0);
+    scrollbar-width: thin;
+    /* scrollbar-gutter: stable; */
 }
