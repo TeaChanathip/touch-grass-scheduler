@@ -11,7 +11,7 @@ export default function MyButton(props: MyButtonProps) {
     return (
         <button
             {...restProps}
-            className={`text-2xl text-white py-2 px-5 rounded-xl cursor-pointer 
+            className={`text-2xl py-2 px-5 rounded-xl cursor-pointer 
                 ${variant} ${className ?? ""}`}
         >
             {children}

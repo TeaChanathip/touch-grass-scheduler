@@ -1,21 +1,27 @@
-/* Custom Button */
-.positive {
+button.positive {
+    color: white;
     background-color: var(--color-prim-green-400);
 }
-.positive:hover {
+button.positive:hover {
     background-color: var(--color-prim-green-700);
 }
 
-.neutral {
-    background-color: var(--color-prim-gray-100);
+button.neutral {
+    background-color: var(--color-prim-green-100);
 }
-.neutral:hover {
-    background-color: var(--color-prim-gray-200);
+button.neutral:hover {
+    background-color: var(--color-prim-green-500);
 }
 
-.negative {
+button.negative {
+    color: white;
     background-color: var(--color-prim-red);
 }
-.negative:hover {
+button.negative:hover {
     background-color: #650000;
+}
+
+button:disabled,
+button:disabled:hover {
+    background-color: var(--color-prim-gray-100);
 }

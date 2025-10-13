@@ -108,5 +108,6 @@ function NavPanel(props: { navItems: NavItem[]; isShow: boolean }) {
     )
 }
 
+// TODO: Fix tabIndex of NavItem
 // TODO: Hide Login route when User is already logged in
 // TODO: Show user info component when logged in
