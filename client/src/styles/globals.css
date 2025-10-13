@@ -6,12 +6,20 @@
     --font-display: "istok-web";
 
     /* color */
-    --color-prim-dark: #525252;
+    --color-prim-red: #e00000;
+    --color-prim-gray-100: #aaaaaa;
+    --color-prim-gray-200: #525252;
+    --color-prim-gray-300: #2e2e2e;
     --color-prim-green-100: #dce1da;
     --color-prim-green-400: #86a789;
     --color-prim-green-500: #909b8c;
+    --color-prim-green-600: #4f6f52;
     --color-prim-green-700: #4b5e4d;
     --color-prim-green-800: #334a36;
+}
+
+html {
+    color: var(--color-prim-gray-200);
 }
 
 .custom-scrollbar {

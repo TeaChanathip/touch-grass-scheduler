@@ -54,7 +54,7 @@ export default function Navbar() {
                         alt="text-icon"
                         width={90}
                         height={40}
-                        className="inline"
+                        className="inline size-auto"
                     />
                 </Link>
                 <button
@@ -86,7 +86,7 @@ function NavPanel(props: { navItems: NavItem[]; isShow: boolean }) {
             }
         >
             <nav>
-                <ul className="mt-8 mx-8 flex flex-col gap-4 text-prim-dark">
+                <ul className="mt-8 mx-8 flex flex-col gap-4">
                     {props.navItems
                         .filter((item) => item.path != pathname)
                         .map((item) => (
