@@ -6,8 +6,26 @@ import MyButton from "../../components/MyButton"
 import Link from "next/link"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useAppDispatch, useAppSelector } from "../../store/hooks"
+import {
+    authenticate,
+    selectUserErrMsg,
+    selectUserStatus,
+} from "../../store/features/user/userSlice"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { CircularProgress } from "@mui/material"
 
 export default function Login() {
+    // Store
+    const dispatch = useAppDispatch()
+    const userStatus = useAppSelector(selectUserStatus)
+    const userErrMsg = useAppSelector(selectUserErrMsg)
+
+    const [errMsg, setErrMsg] = useState("")
+    const router = useRouter()
+
+    // Define schema for validation
     const schema = z.object({
         email: z.email("Invalid email format"),
         password: z
@@ -16,13 +34,39 @@ export default function Login() {
             .max(64, "At most 64 characters"),
     })
 
+    // Use react-hook-form
     const {
         register,
         handleSubmit,
         formState: { errors: valErrors },
     } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
 
-    const onSubmit = (formData: z.infer<typeof schema>) => {}
+    // Handler
+    const onSubmit = (formData: z.infer<typeof schema>) => {
+        const result = schema.safeParse(formData)
+        if (result.success) {
+            dispatch(authenticate(result.data))
+        } else {
+            setErrMsg("Validation Error")
+        }
+    }
+
+    useEffect(() => {
+        switch (userStatus) {
+            case "authenticated":
+                router.push("/")
+                break
+            case "unauthenticated":
+                setErrMsg("Incorrect Email or Password")
+                break
+            case "error":
+                setErrMsg(userErrMsg ?? "Unknown Error")
+                break
+            default:
+                setErrMsg("")
+                break
+        }
+    }, [userStatus, userErrMsg, router])
 
     return (
         <div className="flex flex-col gap-10 items-center pt-10">
@@ -57,7 +101,10 @@ export default function Login() {
                         variant="positive"
                         type="submit"
                         className="w-full md:w-44"
-                        disabled={Object.keys(valErrors).length > 0}
+                        disabled={
+                            Object.keys(valErrors).length > 0 ||
+                            userStatus == "loading"
+                        }
                     >
                         Login
                     </MyButton>
@@ -70,8 +117,14 @@ export default function Login() {
                     </MyButton>
                 </div>
             </form>
+            {userStatus != "loading" && errMsg && (
+                <p className="text-prim-red">{errMsg}</p>
+            )}
+            {userStatus == "loading" && (
+                <span className="text-prim-green-400">
+                    <CircularProgress color="inherit" />
+                </span>
+            )}
         </div>
     )
 }
-
-// TODO: disable login button when the form is invalid

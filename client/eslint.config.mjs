@@ -1,10 +1,10 @@
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import js from "@eslint/js"
+import { FlatCompat } from "@eslint/eslintrc"
 
 const compat = new FlatCompat({
     baseDirectory: import.meta.dirname,
     recommendedConfig: js.configs.recommended,
-});
+})
 
 const eslintConfig = [
     {
@@ -12,7 +12,10 @@ const eslintConfig = [
     },
     ...compat.config({
         extends: ["eslint:recommended", "next", "prettier"],
+        rules: {
+            "no-unused-vars": "warn",
+        },
     }),
-];
+]
 
-export default eslintConfig;
+export default eslintConfig
