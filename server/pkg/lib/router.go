@@ -6,6 +6,7 @@ import (
 	"time"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -32,6 +33,18 @@ func NewRouter(params RouterParam) *gin.Engine {
 
 	router := gin.New()
 	router.Use(gin.Recovery())
+
+	// Configure CORS
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:3000", "https://your-frontend-domain.com"} // Specify allowed origins
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma"}
+	config.ExposeHeaders = []string{"Content-Length"} // Headers exposed to the client
+	config.AllowCredentials = true
+	config.MaxAge = 12 * time.Hour // Cache preflight requests for 12 hours
+
+	// Apply the CORS middleware
+	router.Use(cors.New(config))
 
 	// Use Custom Logger
 	router.Use(ginLoggerMiddleware(params.Logger))
