@@ -41,7 +41,7 @@ export default function Login() {
         formState: { errors: valErrors },
     } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
 
-    // Handler
+    // Submit Handler
     const onSubmit = (formData: z.infer<typeof schema>) => {
         const result = schema.safeParse(formData)
         if (result.success) {

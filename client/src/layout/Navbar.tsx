@@ -25,12 +25,7 @@ export default function Navbar() {
 
     const routes: Path[] = [
         { title: "Login", path: "/login" },
-        { title: "Route1", path: "/" },
-        { title: "Route2", path: "/" },
-        { title: "Route3", path: "/" },
-        { title: "Route4", path: "/" },
-        { title: "Route5", path: "/" },
-        { title: "Route6", path: "/" },
+        { title: "Register", path: "/register" },
     ]
 
     // Generate unique id to be used as key

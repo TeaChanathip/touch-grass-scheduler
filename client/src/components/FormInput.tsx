@@ -1,8 +1,17 @@
 "use client"
 
+import { VisibilityOffRounded, VisibilityRounded } from "@mui/icons-material"
+import { CSSProperties, useState } from "react"
 import { UseFormRegisterReturn } from "react-hook-form"
 
-export default function FormStringInput(props: {
+export default function FormStringInput({
+    label,
+    placeholder,
+    type,
+    required,
+    register,
+    warningMsg,
+}: {
     label?: string
     placeholder?: string
     required?: boolean
@@ -10,22 +19,60 @@ export default function FormStringInput(props: {
     register?: UseFormRegisterReturn<any>
     warningMsg?: string
 }) {
-    const { label, placeholder, type, required, register, warningMsg } = props
+    const [isShowPassword, setShowPassword] = useState(false)
+
+    const toggleShowPassword = () => {
+        setShowPassword(!isShowPassword)
+    }
+
+    const constructAdditionalStyle = () => {
+        const style: CSSProperties = {}
+        if (warningMsg) {
+            style.borderColor = "var(--color-prim-red)"
+        }
+        if (type === "password") {
+            style.paddingRight = "40px"
+        }
+        return style
+    }
 
     return (
         <div className="flex flex-col">
-            <label className="text-2xl">
-                {label}
-                {required && <span className="text-prim-red">*</span>}
-            </label>
-            <input
-                placeholder={placeholder}
-                type={type}
-                required={required}
-                {...register}
-                className="w-full h-11 pl-3 pr-8 text-xl bg-white
+            {label && (
+                <label className="text-2xl">
+                    {label}
+                    {required && <span className="text-prim-red">*</span>}
+                </label>
+            )}
+            <span className="flex flex-row items-center justify-end">
+                <input
+                    placeholder={placeholder}
+                    type={
+                        type === "password"
+                            ? isShowPassword
+                                ? "text"
+                                : "password"
+                            : type
+                    }
+                    required={required}
+                    {...register}
+                    className="w-full h-11 px-3 text-xl bg-white
                     border-prim-green-600 border-solid border-2 rounded-xl"
-            />
+                    style={constructAdditionalStyle()}
+                />
+                {type === "password" && (
+                    <span
+                        className="absolute mr-3 cursor-pointer"
+                        onClick={() => toggleShowPassword()}
+                    >
+                        {isShowPassword ? (
+                            <VisibilityOffRounded />
+                        ) : (
+                            <VisibilityRounded />
+                        )}
+                    </span>
+                )}
+            </span>
             {register && (
                 <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
             )}
