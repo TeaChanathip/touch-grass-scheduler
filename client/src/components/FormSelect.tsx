@@ -2,20 +2,20 @@ import { UseFormRegisterReturn } from "react-hook-form"
 
 export default function FormSelect({
     label,
-    options,
+    optionItems,
     required,
     register,
+    warn,
     warningMsg,
 }: {
     label?: string
-    options: { value: string; label: string }[]
+    optionItems: { value: string; label: string; id: string }[]
     required?: boolean
     register?: UseFormRegisterReturn<any>
+    warn?: boolean
     warningMsg?: string
 }) {
-    const optionItems = options.map((option) => {
-        return { ...option, id: crypto.randomUUID() }
-    })
+    // Create stable IDs based on label and value
 
     return (
         <div className="flex flex-col">
@@ -28,14 +28,12 @@ export default function FormSelect({
             <select
                 defaultValue=""
                 {...register}
-                className="w-full h-11 pl-3 pr-8 text-xl bg-white
+                className="w-full h-11 pl-3 text-xl bg-white
                     border-prim-green-600 border-solid border-2 rounded-xl"
-                style={
-                    warningMsg ? { borderColor: "var(--color-prim-red)" } : {}
-                }
+                style={warn ? { borderColor: "var(--color-prim-red)" } : {}}
             >
                 <option value="" disabled={required} hidden={required}>
-                    Select an option
+                    -- Select --
                 </option>
                 {optionItems.map((item) => (
                     <option value={item.value} key={item.id}>
@@ -43,7 +41,7 @@ export default function FormSelect({
                     </option>
                 ))}
             </select>
-            {register && (
+            {warningMsg !== undefined && (
                 <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
             )}
         </div>

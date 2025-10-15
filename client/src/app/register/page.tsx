@@ -10,6 +10,26 @@ import snakeToTitleCase from "../../utils/snakeToTitleCase"
 import FormRadioGroup from "../../components/FormRadioGroup"
 import { useEffect } from "react"
 import MyButton from "../../components/MyButton"
+import FormPhone from "../../components/FormPhone"
+
+// Generate options from Enum
+const genderOptions = Object.keys(UserGender).map((key) => {
+    return {
+        value: UserGender[key],
+        label: snakeToTitleCase(UserGender[key]),
+        id: `select-gender-${UserGender[key]}`,
+    }
+})
+
+const roleOptions = Object.keys(UserRole)
+    .filter((key) => UserRole[key] !== "admin")
+    .map((key) => {
+        return {
+            value: UserRole[key],
+            label: snakeToTitleCase(UserRole[key]),
+            id: `select-role-${UserRole[key]}`,
+        }
+    })
 
 export default function Register() {
     const schema = z
@@ -32,7 +52,8 @@ export default function Register() {
             gender: z.enum(UserGender, {
                 error: () => ({ message: "Select your gender" }),
             }),
-            phone: z.e164("Must be E164 format").nonempty("Required"),
+            dial_code: z.string().regex(/^\+\d{1,4}$/),
+            phone: z.string().regex(/^\d{7,14}$/),
             role: z.enum(UserRole, {
                 error: () => ({ message: "Select your role" }),
             }),
@@ -66,28 +87,12 @@ export default function Register() {
     // Watch role in real-time
     const currentRole = watch("role")
 
+    // Clear school_num if role is not school personnel
     useEffect(() => {
         if (![UserRole.STUDENT, UserRole.TEACHER].includes(currentRole)) {
             setValue("school_num", undefined)
         }
     }, [setValue, currentRole])
-
-    // Generate options from Enum
-    const genderOptions = Object.keys(UserGender).map((key) => {
-        return {
-            value: UserGender[key],
-            label: snakeToTitleCase(UserGender[key]),
-        }
-    })
-
-    const roleOptions = Object.keys(UserRole)
-        .filter((key) => UserRole[key] !== "admin")
-        .map((key) => {
-            return {
-                value: UserRole[key],
-                label: snakeToTitleCase(UserRole[key]),
-            }
-        })
 
     // Submit Handler
     const onSubmit = (formData: z.infer<typeof schema>) => {
@@ -108,13 +113,15 @@ export default function Register() {
                         type="text"
                         required
                         register={register("first_name")}
-                        warningMsg={valErrors.first_name?.message}
+                        warn={valErrors.first_name !== undefined}
+                        warningMsg={valErrors.first_name?.message ?? ""}
                     />
                     <FormStringInput
                         label="Middle Name"
                         type="text"
                         register={register("middle_name")}
-                        warningMsg={valErrors.middle_name?.message}
+                        warn={valErrors.middle_name !== undefined}
+                        warningMsg={valErrors.middle_name?.message ?? ""}
                     />
                 </span>
                 <span className="flex flex-row gap-4 justify-between">
@@ -122,28 +129,45 @@ export default function Register() {
                         label="Last Name"
                         type="text"
                         register={register("last_name")}
-                        warningMsg={valErrors.last_name?.message}
+                        warn={valErrors.last_name !== undefined}
+                        warningMsg={valErrors.last_name?.message ?? ""}
                     />
                     <FormSelect
                         label="Gender"
-                        options={genderOptions}
+                        optionItems={genderOptions}
                         required
                         register={register("gender")}
-                        warningMsg={valErrors.gender?.message}
+                        warn={valErrors.gender !== undefined}
+                        warningMsg={valErrors.gender?.message ?? ""}
                     />
                 </span>
-                <FormStringInput
+                {/* <FormStringInput
                     label="Phone"
                     type="tel"
                     required
                     register={register("phone")}
                     warningMsg={valErrors.phone?.message}
+                /> */}
+                <FormPhone
+                    required
+                    dialCodeRegister={register("dial_code")}
+                    phoneRegister={register("phone")}
+                    warn={
+                        valErrors.dial_code !== undefined ||
+                        valErrors.phone !== undefined
+                    }
+                    warningMsg={
+                        valErrors.dial_code || valErrors.phone
+                            ? "Invalid phone format"
+                            : ""
+                    }
                 />
                 <FormRadioGroup
                     label="Role"
                     options={roleOptions}
                     register={register("role")}
-                    warningMsg={valErrors.role?.message}
+                    warn={valErrors.role !== undefined}
+                    warningMsg={valErrors.role?.message ?? ""}
                 />
                 {[UserRole.STUDENT, UserRole.TEACHER].includes(currentRole) && (
                     <FormStringInput
@@ -151,30 +175,33 @@ export default function Register() {
                         type="text"
                         required
                         register={register("school_num")}
-                        warningMsg={valErrors.school_num?.message}
+                        warn={valErrors.school_num !== undefined}
+                        warningMsg={valErrors.school_num?.message ?? ""}
                     />
                 )}
-
                 <FormStringInput
                     label="Email"
                     type="email"
                     required
                     register={register("email")}
-                    warningMsg={valErrors.email?.message}
+                    warn={valErrors.email !== undefined}
+                    warningMsg={valErrors.email?.message ?? ""}
                 />
                 <FormStringInput
                     label="Password"
                     type="password"
                     required
                     register={register("password")}
-                    warningMsg={valErrors.password?.message}
+                    warn={valErrors.password !== undefined}
+                    warningMsg={valErrors.password?.message ?? ""}
                 />
                 <FormStringInput
                     label="Confirm Password"
                     type="password"
                     required
                     register={register("confirm_password")}
-                    warningMsg={valErrors.confirm_password?.message}
+                    warn={valErrors.confirm_password !== undefined}
+                    warningMsg={valErrors.confirm_password?.message ?? ""}
                 />
                 <MyButton
                     variant="positive"

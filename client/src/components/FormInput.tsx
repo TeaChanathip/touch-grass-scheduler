@@ -10,6 +10,7 @@ export default function FormStringInput({
     type,
     required,
     register,
+    warn,
     warningMsg,
 }: {
     label?: string
@@ -17,6 +18,7 @@ export default function FormStringInput({
     required?: boolean
     type: "number" | "text" | "email" | "password" | "tel" | "search" | "url"
     register?: UseFormRegisterReturn<any>
+    warn?: boolean
     warningMsg?: string
 }) {
     const [isShowPassword, setShowPassword] = useState(false)
@@ -27,7 +29,7 @@ export default function FormStringInput({
 
     const constructAdditionalStyle = () => {
         const style: CSSProperties = {}
-        if (warningMsg) {
+        if (warn) {
             style.borderColor = "var(--color-prim-red)"
         }
         if (type === "password") {
@@ -73,7 +75,7 @@ export default function FormStringInput({
                     </span>
                 )}
             </span>
-            {register && (
+            {warningMsg !== undefined && (
                 <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
             )}
         </div>
