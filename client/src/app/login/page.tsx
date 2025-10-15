@@ -114,6 +114,7 @@ export default function Login() {
                         variant="neutral"
                         type="button"
                         className="w-full md:w-44"
+                        onClick={() => router.push("/register")}
                     >
                         Register
                     </MyButton>

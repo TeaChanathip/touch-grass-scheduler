@@ -38,11 +38,6 @@ export default function Navbar() {
 
     const routes: Path[] = [
         { title: "Login", path: "/login", visiblility: "unauthenticated" },
-        {
-            title: "Register",
-            path: "/register",
-            visiblility: "unauthenticated",
-        },
         { title: "RouteAll", path: "/all", visiblility: "all" },
         {
             title: "RouteUnauthenticated",
