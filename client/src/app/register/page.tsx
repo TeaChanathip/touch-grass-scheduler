@@ -8,9 +8,18 @@ import FormStringInput from "../../components/FormInput"
 import FormSelect from "../../components/FormSelect"
 import snakeToTitleCase from "../../utils/snakeToTitleCase"
 import FormRadioGroup from "../../components/FormRadioGroup"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import MyButton from "../../components/MyButton"
 import FormPhone from "../../components/FormPhone"
+import { useAppDispatch, useAppSelector } from "../../store/hooks"
+import {
+    selectUserErrMsg,
+    selectUserStatus,
+} from "../../store/features/user/userSlice"
+import { useRouter } from "next/navigation"
+import { CircularProgress } from "@mui/material"
+import { register as registerAction } from "../../store/features/user/userSlice"
+import { RegisterPayload } from "../../interfaces/RegisterPayload.interface"
 
 // Generate options from Enum
 const genderOptions = Object.keys(UserGender).map((key) => {
@@ -32,6 +41,14 @@ const roleOptions = Object.keys(UserRole)
     })
 
 export default function Register() {
+    // Store
+    const dispatch = useAppDispatch()
+    const userStatus = useAppSelector(selectUserStatus)
+    const userErrMsg = useAppSelector(selectUserErrMsg)
+
+    const [errMsg, setErrMsg] = useState("")
+    const router = useRouter()
+
     const schema = z
         .object({
             first_name: z
@@ -96,8 +113,42 @@ export default function Register() {
 
     // Submit Handler
     const onSubmit = (formData: z.infer<typeof schema>) => {
-        console.log("test")
+        const result = schema.safeParse(formData)
+        if (result.success) {
+            const registerPayload: RegisterPayload = {
+                role: result.data.role,
+                first_name: result.data.first_name,
+                middle_name: result.data.middle_name,
+                last_name: result.data.last_name,
+                phone: result.data.dial_code + result.data.phone,
+                gender: result.data.gender,
+                email: result.data.email,
+                password: result.data.password,
+                school_num: result.data.school_num,
+            }
+
+            dispatch(registerAction(registerPayload))
+        } else {
+            setErrMsg("Validation Error")
+        }
     }
+
+    useEffect(() => {
+        switch (userStatus) {
+            case "authenticated":
+                router.push("/")
+                break
+            case "unauthenticated":
+                setErrMsg("Incorrect Email or Password")
+                break
+            case "error":
+                setErrMsg(userErrMsg ?? "Unknown Error")
+                break
+            default:
+                setErrMsg("")
+                break
+        }
+    }, [userStatus, userErrMsg, router])
 
     return (
         <div className="flex flex-col gap-10 items-center pt-10">
@@ -141,13 +192,6 @@ export default function Register() {
                         warningMsg={valErrors.gender?.message ?? ""}
                     />
                 </span>
-                {/* <FormStringInput
-                    label="Phone"
-                    type="tel"
-                    required
-                    register={register("phone")}
-                    warningMsg={valErrors.phone?.message}
-                /> */}
                 <FormPhone
                     required
                     dialCodeRegister={register("dial_code")}
@@ -212,6 +256,14 @@ export default function Register() {
                     Register
                 </MyButton>
             </form>
+            {userStatus != "loading" && errMsg && (
+                <p className="text-prim-red">{errMsg}</p>
+            )}
+            {userStatus == "loading" && (
+                <span className="text-prim-green-400">
+                    <CircularProgress color="inherit" />
+                </span>
+            )}
         </div>
     )
 }

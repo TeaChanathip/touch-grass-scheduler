@@ -1,4 +1,5 @@
 import { LoginPayload } from "../../interfaces/LoginPayload.interface"
+import { RegisterPayload } from "../../interfaces/RegisterPayload.interface"
 import { User } from "../../interfaces/User.interface"
 import { ApiService } from "../api.service"
 
@@ -12,5 +13,12 @@ export class AuthService {
             LoginPayload,
             { user: User; token: string }
         >(`${this.url}/login`, payload)
+    }
+
+    async register(payload: RegisterPayload) {
+        return await this.apiService.post<
+            RegisterPayload,
+            { user: User; token: string }
+        >(`${this.url}/register`, payload)
     }
 }
