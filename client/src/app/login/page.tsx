@@ -81,14 +81,16 @@ export default function Login() {
                     type="email"
                     required
                     register={register("email")}
-                    warningMsg={valErrors.email?.message}
+                    warn={valErrors.email != undefined}
+                    warningMsg={valErrors.email?.message ?? ""}
                 />
                 <FormStringInput
                     label="Password"
                     type="password"
                     required
                     register={register("password")}
-                    warningMsg={valErrors.password?.message}
+                    warn={valErrors.password != undefined}
+                    warningMsg={valErrors.password?.message ?? ""}
                 />
                 <Link
                     href="/forgot-password"

@@ -24,6 +24,12 @@ export const userSlice = createAppSlice({
     name: "user",
     initialState,
     reducers: (create) => ({
+        logout: create.reducer((state) => {
+            localStorage.removeItem("token")
+            state.status = "unauthenticated"
+            state.user = undefined
+            state.errMsg = undefined
+        }),
         login: create.asyncThunk(
             async (payload: LoginPayload, { rejectWithValue }) => {
                 try {
@@ -123,7 +129,7 @@ export const userSlice = createAppSlice({
 })
 
 // Actions
-export const { login, register } = userSlice.actions
+export const { login, register, logout } = userSlice.actions
 
 // Selectors
 export const { selectUser, selectUserStatus, selectUserErrMsg } =
