@@ -7,7 +7,7 @@ import (
 
 type User struct {
 	ID         uuid.UUID        `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Role       types.UserRole   `gorm:"type:role;not null" json:"role"`
+	Role       types.UserRole   `gCustomClaimsExampleorm:"type:role;not null" json:"role"`
 	FirstName  string           `gorm:"type:varchar(128);not null" json:"first_name"`
 	MiddleName string           `gorm:"type:varchar(128)" json:"middle_name"`
 	LastName   string           `gorm:"type:varchar(128)" json:"last_name"`

@@ -1,7 +1,7 @@
 package authfx
 
 import (
-	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/middlewares"
+	middlewarefx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/middlewares"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -9,22 +9,25 @@ import (
 
 type AuthRoutesParams struct {
 	fx.In
-	Logger         *zap.Logger
-	Router         *gin.Engine
-	AuthController *AuthController
+	Logger               *zap.Logger
+	Router               *gin.Engine
+	AuthController       *AuthController
+	RequestBodyValidator *middlewarefx.RequestBodyValidator
 }
 
 type AuthRoutes struct {
-	Logger         *zap.Logger
-	Router         *gin.Engine
-	AuthController *AuthController
+	Logger               *zap.Logger
+	Router               *gin.Engine
+	AuthController       *AuthController
+	RequestBodyValidator *middlewarefx.RequestBodyValidator
 }
 
 func NewAuthRoutes(params AuthRoutesParams) *AuthRoutes {
 	return &AuthRoutes{
-		Logger:         params.Logger,
-		Router:         params.Router,
-		AuthController: params.AuthController,
+		Logger:               params.Logger,
+		Router:               params.Router,
+		AuthController:       params.AuthController,
+		RequestBodyValidator: params.RequestBodyValidator,
 	}
 }
 
@@ -33,10 +36,10 @@ func (routes *AuthRoutes) Setup() {
 	authGroup := routes.Router.Group("api/v1/auth")
 
 	authGroup.POST("/register",
-		middlewares.RequestBodyValidator(routes.Logger, "register", RegisterBody{}),
+		routes.RequestBodyValidator.Handler("register", RegisterBody{}),
 		routes.AuthController.Register)
 
 	authGroup.POST("/login",
-		middlewares.RequestBodyValidator(routes.Logger, "login", LoginBody{}),
+		routes.RequestBodyValidator.Handler("login", LoginBody{}),
 		routes.AuthController.Login)
 }

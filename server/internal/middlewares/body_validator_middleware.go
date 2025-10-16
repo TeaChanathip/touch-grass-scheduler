@@ -1,4 +1,4 @@
-package middlewares
+package middlewarefx
 
 import (
 	"errors"
@@ -9,17 +9,33 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
-func RequestBodyValidator(logger *zap.Logger, name string, structType any) gin.HandlerFunc {
+type RequestBodyValidatorParams struct {
+	fx.In
+	Logger *zap.Logger
+}
+
+type RequestBodyValidator struct {
+	Logger *zap.Logger
+}
+
+func NewRequestBodyValidator(params RequestBodyValidatorParams) *RequestBodyValidator {
+	return &RequestBodyValidator{
+		Logger: params.Logger,
+	}
+}
+
+func (m *RequestBodyValidator) Handler(name string, structType any) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Create a new instance of the struct type using reflection
 		structValue := reflect.New(reflect.TypeOf(structType))
 		validateBody := structValue.Interface()
 
 		if err := ctx.ShouldBindBodyWithJSON(&validateBody); err != nil {
-			logger.Debug(fmt.Sprintf("Validation error on %s request", name), zap.Error(err))
+			m.Logger.Debug(fmt.Sprintf("Validation error on %s request", name), zap.Error(err))
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": parseValidationErrors(err)})
 			ctx.Abort()
 			return

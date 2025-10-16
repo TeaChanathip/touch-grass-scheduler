@@ -16,15 +16,11 @@ func registerHooks(
 	router *gin.Engine,
 	logger *zap.Logger,
 	routes Routes,
-	// middlewares Middlewares,
 ) {
 	lc.Append(
 		fx.Hook{
 			OnStart: func(context.Context) error {
 				// ======== SET UP COMPONENTS ========
-				// Perform any necessary setup or initialization tasks for the middlewares
-				// middlewares.Setup()
-
 				// Perform any necessary setup or initialization tasks for the routes
 				routes.Setup()
 
