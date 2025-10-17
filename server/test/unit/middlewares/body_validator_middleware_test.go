@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/middlewares"
+	middlewarefx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/middlewares"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -45,8 +45,10 @@ func TestRequestBodyValidator_Success(t *testing.T) {
 	var validatedBodyFromContext *TestRequestBody
 
 	// Set up route with middleware and handler
+	requestBodyValidator := &middlewarefx.RequestBodyValidator{Logger: zap.NewNop()}
+
 	router.POST("/test",
-		middlewares.RequestBodyValidator(zap.NewNop(), "test", TestRequestBody{}),
+		requestBodyValidator.Handler("test", TestRequestBody{}),
 		func(c *gin.Context) {
 			nextHandlerCalled = true
 
@@ -101,7 +103,8 @@ func TestRequestBodyValidator_Error(t *testing.T) {
 	ctx.Request.Header.Set("Content-Type", "application/json")
 
 	// Create middleware
-	middleware := middlewares.RequestBodyValidator(zap.NewNop(), "test", TestRequestBody{})
+	requestBodyValidator := &middlewarefx.RequestBodyValidator{Logger: zap.NewNop()}
+	middleware := requestBodyValidator.Handler("test", TestRequestBody{})
 
 	// ------------------ Act ----------------------
 	middleware(ctx)

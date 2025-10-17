@@ -31,7 +31,7 @@ func NewUsersController(params UsersControllerParams) *UsersController {
 // ======================== METHODS ========================
 
 func (controller *UsersController) GetUser(ctx *gin.Context) {
-	// Get user's infomation from Context
+	// Get userID Context that set by AuthMiddleware
 	_userID, _ := ctx.Get("user_id")
 	userID, err := uuid.Parse(_userID.(string))
 	if err != nil {

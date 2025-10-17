@@ -3,6 +3,7 @@ package mocks
 import (
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
 	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -20,6 +21,16 @@ func (m *MockUserService) CreateUser(user *models.User) error {
 
 func (m *MockUserService) GetUserByEmail(email string) (*models.User, error) {
 	args := m.Called(email)
+
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserService) GetUserByID(id uuid.UUID) (*models.User, error) {
+	args := m.Called(id)
 
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
