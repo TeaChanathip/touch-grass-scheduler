@@ -3,8 +3,10 @@ package usersfx
 import "go.uber.org/fx"
 
 var Module = fx.Module(
-	"userfx",
+	"usersfx",
 	fx.Provide(
+		NewUsersRoutes,
+		NewUsersController,
 		NewUserService,
 	),
 )

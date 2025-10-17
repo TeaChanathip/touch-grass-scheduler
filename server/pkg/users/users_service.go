@@ -6,6 +6,7 @@ import (
 
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
+	"github.com/google/uuid"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -25,6 +26,7 @@ type UserService struct {
 type UserServiceInterface interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
+	GetUserByID(id uuid.UUID) (*models.User, error)
 }
 
 // Verify interface implementation at compile time
@@ -85,6 +87,26 @@ func (service *UserService) GetUserByEmail(email string) (*models.User, error) {
 		// Other errors
 		service.Logger.Error("Database error while fetching user with email",
 			zap.String("email", email),
+			zap.Error(result.Error),
+		)
+		return nil, common.ErrDatabase
+	}
+
+	return &user, nil
+}
+
+func (service *UserService) GetUserByID(id uuid.UUID) (*models.User, error) {
+	var user models.User
+
+	result := service.DB.First(&user, id)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		// User not found service.Logger.Debug("User not found", zap.String("id", id))
+		return nil, common.ErrUserNotFound
+	} else if result.Error != nil {
+		// Other errors
+		service.Logger.Error("Database error while fetching user with id",
+			zap.String("id", id.String()),
 			zap.Error(result.Error),
 		)
 		return nil, common.ErrDatabase
