@@ -32,21 +32,19 @@ func NewRouter(params RouterParam) *gin.Engine {
 	}
 
 	router := gin.New()
-	router.Use(gin.Recovery())
 
 	// Configure CORS
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:3000", "https://your-frontend-domain.com"} // Specify allowed origins
+	config.AllowOrigins = []string{"http://localhost:3000"} // Specify allowed origins
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma", "Referer", "Referrer-Policy"}
 	config.ExposeHeaders = []string{"Content-Length"} // Headers exposed to the client
 	config.AllowCredentials = true
 	config.MaxAge = 12 * time.Hour // Cache preflight requests for 12 hours
 
-	// Apply the CORS middleware
+	// Apply middleware
 	router.Use(cors.New(config))
-
-	// Use Custom Logger
+	router.Use(gin.Recovery())
 	router.Use(ginLoggerMiddleware(params.Logger))
 
 	// Use field name specified for JSON in validation

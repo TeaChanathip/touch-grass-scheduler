@@ -36,8 +36,7 @@ func (m *RequestBodyValidator) Handler(name string, structType any) gin.HandlerF
 
 		if err := ctx.ShouldBindBodyWithJSON(&validateBody); err != nil {
 			m.Logger.Debug(fmt.Sprintf("Validation error on %s request", name), zap.Error(err))
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": parseValidationErrors(err)})
-			ctx.Abort()
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": parseValidationErrors(err)})
 			return
 		}
 

@@ -36,7 +36,7 @@ func (routes *UsersRoutes) Setup() {
 	routes.Logger.Info("Setting up [Users] routes.")
 	usersGroup := routes.Router.Group("api/v1/users")
 
-	usersGroup.GET("/", routes.AuthMiddleware.Handler(), routes.UsersController.GetUser)
+	usersGroup.GET("", routes.AuthMiddleware.Handler(), routes.UsersController.GetUser) // handles /api/v1/users
 	usersGroup.GET("/:id", routes.AuthMiddleware.HandlerWithRole(types.UserRoleAdmin), routes.UsersController.GetUserByID)
 
 	// usersGroup.PUT("users/:id")

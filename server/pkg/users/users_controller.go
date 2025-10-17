@@ -46,7 +46,7 @@ func (controller *UsersController) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"user": user})
+	ctx.JSON(http.StatusOK, gin.H{"user": user.ToPublic()})
 }
 
 func (controller *UsersController) GetUserByID(ctx *gin.Context) {
@@ -65,7 +65,7 @@ func (controller *UsersController) GetUserByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"user": user})
+	ctx.JSON(http.StatusOK, gin.H{"user": user.ToPublic()})
 }
 
 // func (controller *UsersController) UpdateUser(ctx *gin.Context) {

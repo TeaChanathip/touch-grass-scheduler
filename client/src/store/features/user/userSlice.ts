@@ -1,9 +1,11 @@
+import { createAsyncThunk } from "@reduxjs/toolkit"
 import { LoginPayload } from "../../../interfaces/LoginPayload.interface"
 import { RegisterPayload } from "../../../interfaces/RegisterPayload.interface"
 import { User } from "../../../interfaces/User.interface"
 import { ApiService, isApiError } from "../../../services/api.service"
 import { AuthService } from "../../../services/auth/auth.service"
 import { createAppSlice } from "../../createAppSlice"
+import { UsersService } from "../../../services/users/users.service"
 
 export interface UserSliceState {
     user?: User
@@ -19,6 +21,7 @@ const initialState: UserSliceState = {
 
 const apiService = new ApiService()
 const authService = new AuthService(apiService)
+const usersService = new UsersService(apiService)
 
 export const userSlice = createAppSlice({
     name: "user",
@@ -120,6 +123,38 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
+        getUser: create.asyncThunk(
+            async (_, { rejectWithValue }) => {
+                try {
+                    const { user } = await usersService.getUser()
+                    return user
+                } catch (err) {
+                    if (isApiError(err)) {
+                        return rejectWithValue({
+                            status: err.status,
+                            message: err.message,
+                        })
+                    }
+                    // unexpected error
+                    throw err
+                }
+            },
+            {
+                pending: (state): void => {
+                    state.status = "loading"
+                },
+                fulfilled: (state, action) => {
+                    state.status = "authenticated"
+                    state.user = action.payload
+                    state.errMsg = ""
+                },
+                rejected: (state, action) => {
+                    state.status = "error"
+                    state.errMsg = action.error.message
+                    state.user = undefined
+                },
+            }
+        ),
     }),
     selectors: {
         selectUser: (state) => state.user,
@@ -129,7 +164,7 @@ export const userSlice = createAppSlice({
 })
 
 // Actions
-export const { login, register, logout } = userSlice.actions
+export const { login, register, logout, getUser } = userSlice.actions
 
 // Selectors
 export const { selectUser, selectUserStatus, selectUserErrMsg } =

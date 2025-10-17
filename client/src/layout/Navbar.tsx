@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
 import {
+    getUser,
     logout,
     selectUser,
     selectUserStatus,
@@ -29,12 +30,22 @@ export default function Navbar() {
     const pathname = usePathname()
 
     // Store
+    const dispatch = useAppDispatch()
     const userStatus = useAppSelector(selectUserStatus)
     const user = useAppSelector(selectUser)
 
     useEffect(() => {
         setShow(false)
     }, [pathname])
+
+    useEffect(() => {
+        if (typeof window === "undefined") return
+
+        const token = localStorage.getItem("token")
+        if (token) {
+            dispatch(getUser())
+        }
+    }, [dispatch])
 
     const routes: Path[] = [
         { title: "Login", path: "/login", visiblility: "unauthenticated" },

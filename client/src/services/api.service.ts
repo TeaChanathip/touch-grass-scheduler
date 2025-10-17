@@ -6,7 +6,7 @@ export class ApiService {
         try {
             // read token lazily to avoid SSR/localStorage issues
             if (typeof window !== "undefined") {
-                const token = localStorage.getItem("accessToken")
+                const token = localStorage.getItem("token")
                 if (token) headers.set("Authorization", `Bearer ${token}`)
             }
         } catch {
@@ -64,6 +64,9 @@ export class ApiService {
             const response = await fetch(fetchUrl, {
                 method,
                 headers,
+                credentials: "include",
+                mode: "cors", // Explicitly set CORS mode
+                cache: "no-cache", // Prevent caching
                 body:
                     options?.body !== undefined && method !== "GET"
                         ? JSON.stringify(options.body)
