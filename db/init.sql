@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     "first_name" VARCHAR(128) NOT NULL,
     "middle_name" VARCHAR (128) DEFAULT NULL,
     "last_name" VARCHAR(128) DEFAULT NULL,
-    "phone" VARCHAR(15) NOT NULL,
+    "phone" VARCHAR(15) NOT NULL, -- e164
     "gender" gender NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "password" VARCHAR(60) NOT NULL,

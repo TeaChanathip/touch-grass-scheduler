@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import FormStringInput from "../../components/FormInput"
 import FormSelect from "../../components/FormSelect"
-import snakeToTitleCase from "../../utils/snakeToTitleCase"
 import FormRadioGroup from "../../components/FormRadioGroup"
 import { useEffect, useState } from "react"
 import MyButton from "../../components/MyButton"
@@ -20,27 +19,13 @@ import { useRouter } from "next/navigation"
 import { CircularProgress } from "@mui/material"
 import { register as registerAction } from "../../store/features/user/userSlice"
 import { RegisterPayload } from "../../interfaces/RegisterPayload.interface"
+import parsePhoneNumberFromString, {
+    isValidPhoneNumber,
+} from "libphonenumber-js"
+import { CountryCodeSchema } from "../../schemas/CountryCodeSchema"
+import { genderOptions, roleOptions } from "../../constants/options"
 
-// Generate options from Enum
-const genderOptions = Object.keys(UserGender).map((key) => {
-    return {
-        value: UserGender[key],
-        label: snakeToTitleCase(UserGender[key]),
-        id: `select-gender-${UserGender[key]}`,
-    }
-})
-
-const roleOptions = Object.keys(UserRole)
-    .filter((key) => UserRole[key] !== "admin")
-    .map((key) => {
-        return {
-            value: UserRole[key],
-            label: snakeToTitleCase(UserRole[key]),
-            id: `select-role-${UserRole[key]}`,
-        }
-    })
-
-export default function Register() {
+export default function RegisterPage() {
     // Store
     const dispatch = useAppDispatch()
     const userStatus = useAppSelector(selectUserStatus)
@@ -69,8 +54,8 @@ export default function Register() {
             gender: z.enum(UserGender, {
                 error: () => ({ message: "Select your gender" }),
             }),
-            dial_code: z.string().regex(/^\+\d{1,4}$/),
-            phone: z.string().regex(/^\d{7,14}$/),
+            country_code: CountryCodeSchema,
+            phone: z.string().regex(/^\d{7,15}$/),
             role: z.enum(UserRole, {
                 error: () => ({ message: "Select your role" }),
             }),
@@ -90,6 +75,10 @@ export default function Register() {
         .refine((data) => data.password === data.confirm_password, {
             message: "Passwords don't match",
             path: ["confirm_password"],
+        })
+        .refine((data) => isValidPhoneNumber(data.phone, data.country_code), {
+            message: "Invalid phone number",
+            path: ["phone"],
         })
 
     // Use react-hook-form
@@ -120,7 +109,10 @@ export default function Register() {
                 first_name: result.data.first_name,
                 middle_name: result.data.middle_name,
                 last_name: result.data.last_name,
-                phone: result.data.dial_code + result.data.phone,
+                phone: parsePhoneNumberFromString(
+                    result.data.phone,
+                    result.data.country_code
+                )!.format("E.164"),
                 gender: result.data.gender,
                 email: result.data.email,
                 password: result.data.password,
@@ -194,16 +186,15 @@ export default function Register() {
                 </span>
                 <FormPhone
                     required
-                    dialCodeRegister={register("dial_code")}
+                    countryCodeRegister={register("country_code")}
                     phoneRegister={register("phone")}
                     warn={
-                        valErrors.dial_code !== undefined ||
+                        valErrors.country_code !== undefined ||
                         valErrors.phone !== undefined
                     }
                     warningMsg={
-                        valErrors.dial_code || valErrors.phone
-                            ? "Invalid phone format"
-                            : ""
+                        valErrors.country_code?.message ??
+                        valErrors.phone?.message
                     }
                 />
                 <FormRadioGroup
@@ -267,3 +258,7 @@ export default function Register() {
         </div>
     )
 }
+
+// TODO: Send verification email
+// TODO: Refactor API to not expose that the email already exists in client.
+// Instead, sending a warning email.

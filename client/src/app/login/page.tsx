@@ -16,7 +16,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { CircularProgress } from "@mui/material"
 
-export default function Login() {
+export default function LoginPage() {
     // Store
     const dispatch = useAppDispatch()
     const userStatus = useAppSelector(selectUserStatus)

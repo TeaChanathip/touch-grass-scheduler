@@ -15,6 +15,7 @@
         "@reduxjs/toolkit": "^2.9.0",
         "@uidotdev/usehooks": "^2.4.1",
         "country-list-with-dial-code-and-flag": "^5.1.1",
+        "libphonenumber-js": "^1.12.24",
         "next": "^15.5.4",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",

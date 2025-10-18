@@ -81,7 +81,7 @@ export default function Navbar() {
     // Generate unique id to be used as key
     const routeItems: NavItem[] = routes
         .map((route) => {
-            return { ...route, id: crypto.randomUUID() }
+            return { ...route, id: `route-items-${route.title}` }
         })
         .filter((item) => {
             if (item.path === pathname) return false
@@ -163,7 +163,9 @@ function NavPanel({
     }
 
     // Handler
-    const editBtnHandler = () => {}
+    const editBtnHandler = () => {
+        router.push("/profile")
+    }
 
     const logoutBtnHandler = () => {
         dispatch(logout())
