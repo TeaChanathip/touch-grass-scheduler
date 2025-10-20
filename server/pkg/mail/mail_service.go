@@ -70,7 +70,7 @@ func (service *MailService) SendRegistrationWarning(user *models.User) error {
 		UserFirstName: user.FirstName,
 		UserEmail:     user.Email,
 		AppName:       appName,
-		ForgotPasswordURL: fmt.Sprintf("%s:%d/auth/forgot-password",
+		ForgotPasswordURL: fmt.Sprintf("%s:%d/forgot-password",
 			service.AppConfig.ClientURL,
 			service.AppConfig.ClientPort,
 		),
@@ -103,7 +103,7 @@ func (service *MailService) SendRegistrationVerification(email string, registrat
 	}{
 		AppName:      appName,
 		JWTExpiresIn: service.AppConfig.JWTExpiresIn,
-		RegistrationURL: fmt.Sprintf("%s:%d/auth/register/%s",
+		RegistrationURL: fmt.Sprintf("%s:%d/register/%s",
 			service.AppConfig.ClientURL,
 			service.AppConfig.ClientPort,
 			registrationToken,

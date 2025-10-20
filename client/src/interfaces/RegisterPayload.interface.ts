@@ -7,7 +7,6 @@ export interface RegisterPayload {
     last_name?: string
     phone: string
     gender: UserGender
-    email: string
     password: string
     school_num?: string
 }

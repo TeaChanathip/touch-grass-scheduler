@@ -79,6 +79,7 @@ func (controller *AuthController) GetRegistrationMail(ctx *gin.Context) {
 	// Validate email
 	if _, err := mail.ParseAddress(email); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+		return
 	}
 
 	// Business logic

@@ -1,4 +1,3 @@
-import { createAsyncThunk } from "@reduxjs/toolkit"
 import { LoginPayload } from "../../../interfaces/LoginPayload.interface"
 import { RegisterPayload } from "../../../interfaces/RegisterPayload.interface"
 import { User } from "../../../interfaces/User.interface"
@@ -27,19 +26,55 @@ export const userSlice = createAppSlice({
     name: "user",
     initialState,
     reducers: (create) => ({
-        logout: create.reducer((state) => {
-            localStorage.removeItem("token")
-            state.status = "unauthenticated"
-            state.user = undefined
-            state.errMsg = undefined
-        }),
+        register: create.asyncThunk(
+            async (
+                payload: {
+                    registrationToken: string
+                    registerPayload: RegisterPayload
+                },
+                { rejectWithValue }
+            ) => {
+                try {
+                    const { user } = await authService.register(
+                        payload.registrationToken,
+                        payload.registerPayload
+                    )
+                    return user
+                } catch (err) {
+                    if (isApiError(err)) {
+                        return rejectWithValue({
+                            status: err.status,
+                            message: err.message,
+                        })
+                    }
+                    // unexpected error
+                    throw err
+                }
+            },
+            {
+                pending: (state) => {
+                    state.status = "loading"
+                },
+                fulfilled: (state, action) => {
+                    state.status = "authenticated"
+                    state.user = action.payload
+                    state.errMsg = ""
+                },
+                rejected: (state, action) => {
+                    const payload = action.payload as
+                        | { status?: number; message?: string }
+                        | undefined
+
+                    state.status = "error"
+                    state.errMsg = payload?.message
+                    state.user = undefined
+                },
+            }
+        ),
         login: create.asyncThunk(
             async (payload: LoginPayload, { rejectWithValue }) => {
                 try {
-                    const { user, token } = await authService.login(payload)
-
-                    localStorage.setItem("token", token)
-
+                    const { user } = await authService.login(payload)
                     return user
                 } catch (err) {
                     if (isApiError(err)) {
@@ -78,55 +113,45 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
-        register: create.asyncThunk(
-            async (payload: RegisterPayload, { rejectWithValue }) => {
-                try {
-                    const { user, token } = await authService.register(payload)
-
-                    localStorage.setItem("token", token)
-
-                    return user
-                } catch (err) {
-                    if (isApiError(err)) {
-                        return rejectWithValue({
-                            status: err.status,
-                            message: err.message,
-                        })
-                    }
-                    // unexpected error
-                    throw err
-                }
-            },
-            {
-                pending: (state) => {
-                    state.status = "loading"
-                },
-                fulfilled: (state, action) => {
-                    state.status = "authenticated"
-                    state.user = action.payload
-                    state.errMsg = ""
-                },
-                rejected: (state, action) => {
-                    const payload = action.payload as
-                        | { status?: number; message?: string }
-                        | undefined
-
-                    // 401 Unauthorized
-                    if (payload?.status === 401) {
-                        state.status = "unauthenticated"
-                        state.errMsg = ""
-                    } else {
-                        state.status = "error"
-                        state.errMsg = action.error.message
-                    }
-                    state.user = undefined
-                },
-            }
-        ),
-        getUser: create.asyncThunk(
+        logout: create.asyncThunk(
             async (_, { rejectWithValue }) => {
                 try {
-                    const { user } = await usersService.getUser()
+                    await authService.logout()
+                } catch (err) {
+                    if (isApiError(err)) {
+                        return rejectWithValue({
+                            status: err.status,
+                            message: err.message,
+                        })
+                    }
+                    // unexpected error
+                    throw err
+                }
+            },
+            {
+                pending: (state) => {
+                    state.status = "loading"
+                },
+                fulfilled: (state) => {
+                    state.user = undefined
+                    state.status = "unauthenticated"
+                    state.errMsg = undefined
+                },
+                rejected: (state, action) => {
+                    const payload = action.payload as
+                        | { status?: number; message?: string }
+                        | undefined
+
+                    state.user = undefined
+                    state.status = "error"
+                    state.errMsg = payload?.message
+                },
+            }
+        ),
+        getMe: create.asyncThunk(
+            async (_, { rejectWithValue }) => {
+                try {
+                    const { user } = await usersService.getMe()
                     return user
                 } catch (err) {
                     if (isApiError(err)) {
@@ -149,8 +174,17 @@ export const userSlice = createAppSlice({
                     state.errMsg = ""
                 },
                 rejected: (state, action) => {
-                    state.status = "error"
-                    state.errMsg = action.error.message
+                    const payload = action.payload as
+                        | { status?: number; message?: string }
+                        | undefined
+
+                    if (payload?.status === 401) {
+                        state.status = "idle"
+                        state.errMsg = undefined
+                    } else {
+                        state.status = "error"
+                        state.errMsg = payload?.message
+                    }
                     state.user = undefined
                 },
             }
@@ -164,10 +198,8 @@ export const userSlice = createAppSlice({
 })
 
 // Actions
-export const { login, register, logout, getUser } = userSlice.actions
+export const { login, register, logout, getMe } = userSlice.actions
 
 // Selectors
 export const { selectUser, selectUserStatus, selectUserErrMsg } =
     userSlice.selectors
-
-//TODO: action for get user if the token is available in local storage

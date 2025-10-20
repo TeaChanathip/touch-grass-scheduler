@@ -102,8 +102,7 @@ func (service *AuthService) Register(registrationTokenString string, body *Regis
 	}
 
 	// Check if email is valid
-	_, err = mail.ParseAddress(email)
-	if err != nil {
+	if _, err = mail.ParseAddress(email); err != nil {
 		service.Logger.Debug("Error email is invalid")
 		return nil, "", common.ErrVariableParsing
 	}

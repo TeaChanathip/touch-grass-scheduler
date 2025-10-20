@@ -1,19 +1,5 @@
 export class ApiService {
-    timeoutMs = 8000
-
-    private buildHeaders() {
-        const headers = new Headers({ "Content-Type": "application/json" })
-        try {
-            // read token lazily to avoid SSR/localStorage issues
-            if (typeof window !== "undefined") {
-                const token = localStorage.getItem("token")
-                if (token) headers.set("Authorization", `Bearer ${token}`)
-            }
-        } catch {
-            // ignore - defensive
-        }
-        return headers
-    }
+    private timeoutMs = 8000
 
     private async safeParseJson(res: Response) {
         const text = await res.text()
@@ -58,7 +44,7 @@ export class ApiService {
             }
         }
 
-        const headers = this.buildHeaders()
+        const headers = new Headers({ "Content-Type": "application/json" })
 
         try {
             const response = await fetch(fetchUrl, {

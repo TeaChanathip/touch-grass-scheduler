@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
 import {
-    getUser,
+    getMe,
     logout,
     selectUser,
     selectUserStatus,
@@ -26,26 +26,30 @@ interface NavItem extends Path {
 }
 
 export default function Navbar() {
-    const [isShow, setShow] = useState(false)
-    const pathname = usePathname()
-
     // Store
     const dispatch = useAppDispatch()
     const userStatus = useAppSelector(selectUserStatus)
     const user = useAppSelector(selectUser)
 
+    // Other hooks
+    const [isShow, setShow] = useState(false)
+    const pathname = usePathname()
+    const router = useRouter()
+
     useEffect(() => {
         setShow(false)
     }, [pathname])
 
+    // TODO: Migrate to use Reach Server Component?
     useEffect(() => {
-        if (typeof window === "undefined") return
-
-        const token = localStorage.getItem("token")
-        if (token) {
-            dispatch(getUser())
-        }
+        dispatch(getMe())
     }, [dispatch])
+
+    useEffect(() => {
+        if (userStatus === "unauthenticated") {
+            router.push("/login")
+        }
+    }, [userStatus, router])
 
     const routes: Path[] = [
         { title: "Login", path: "/login", visiblility: "unauthenticated" },
@@ -146,6 +150,7 @@ function NavPanel({
     // Store
     const dispatch = useAppDispatch()
 
+    // Other hooks
     const router = useRouter()
 
     let displayName = ""
@@ -162,14 +167,13 @@ function NavPanel({
         }
     }
 
-    // Handler
+    // Button Handlers
     const editBtnHandler = () => {
         router.push("/profile")
     }
 
     const logoutBtnHandler = () => {
         dispatch(logout())
-        router.push("/login")
     }
 
     return (

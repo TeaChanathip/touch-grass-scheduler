@@ -1,29 +1,29 @@
 "use client"
 
 import * as z from "zod"
-import { UserGender, UserRole } from "../../interfaces/User.interface"
+import { UserGender, UserRole } from "../../../interfaces/User.interface"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import FormStringInput from "../../components/FormInput"
-import FormSelect from "../../components/FormSelect"
-import FormRadioGroup from "../../components/FormRadioGroup"
+import FormStringInput from "../../../components/FormInput"
+import FormSelect from "../../../components/FormSelect"
+import FormRadioGroup from "../../../components/FormRadioGroup"
 import { useEffect, useState } from "react"
-import MyButton from "../../components/MyButton"
-import FormPhone from "../../components/FormPhone"
-import { useAppDispatch, useAppSelector } from "../../store/hooks"
+import MyButton from "../../../components/MyButton"
+import FormPhone from "../../../components/FormPhone"
+import { useAppDispatch, useAppSelector } from "../../../store/hooks"
 import {
     selectUserErrMsg,
     selectUserStatus,
-} from "../../store/features/user/userSlice"
-import { useRouter } from "next/navigation"
+} from "../../../store/features/user/userSlice"
+import { useParams, useRouter } from "next/navigation"
 import { CircularProgress } from "@mui/material"
-import { register as registerAction } from "../../store/features/user/userSlice"
-import { RegisterPayload } from "../../interfaces/RegisterPayload.interface"
+import { register as registerAction } from "../../../store/features/user/userSlice"
+import { RegisterPayload } from "../../../interfaces/RegisterPayload.interface"
 import parsePhoneNumberFromString, {
     isValidPhoneNumber,
 } from "libphonenumber-js"
-import { CountryCodeSchema } from "../../schemas/CountryCodeSchema"
-import { genderOptions, roleOptions } from "../../constants/options"
+import { CountryCodeSchema } from "../../../schemas/CountryCodeSchema"
+import { genderOptions, roleOptions } from "../../../constants/options"
 
 export default function RegisterPage() {
     // Store
@@ -31,8 +31,10 @@ export default function RegisterPage() {
     const userStatus = useAppSelector(selectUserStatus)
     const userErrMsg = useAppSelector(selectUserErrMsg)
 
+    // Other hooks
     const [errMsg, setErrMsg] = useState("")
     const router = useRouter()
+    const params = useParams<{ registrationToken: string }>()
 
     const schema = z
         .object({
@@ -65,7 +67,7 @@ export default function RegisterPage() {
                 .min(1, "Required")
                 .max(16, "Too long")
                 .optional(),
-            email: z.email("Invalid email"),
+            // email: z.email("Invalid email"),
             password: z.string().min(8, "Min 8 characters").max(64, "Too long"),
             confirm_password: z
                 .string()
@@ -114,12 +116,16 @@ export default function RegisterPage() {
                     result.data.country_code
                 )!.format("E.164"),
                 gender: result.data.gender,
-                email: result.data.email,
                 password: result.data.password,
                 school_num: result.data.school_num,
             }
 
-            dispatch(registerAction(registerPayload))
+            dispatch(
+                registerAction({
+                    registrationToken: params.registrationToken,
+                    registerPayload: registerPayload,
+                })
+            )
         } else {
             setErrMsg("Validation Error")
         }
@@ -214,14 +220,14 @@ export default function RegisterPage() {
                         warningMsg={valErrors.school_num?.message ?? ""}
                     />
                 )}
-                <FormStringInput
-                    label="Email"
-                    type="email"
-                    required
-                    register={register("email")}
-                    warn={valErrors.email !== undefined}
-                    warningMsg={valErrors.email?.message ?? ""}
-                />
+                {/* <FormStringInput */}
+                {/*     label="Email" */}
+                {/*     type="email" */}
+                {/*     required */}
+                {/*     register={register("email")} */}
+                {/*     warn={valErrors.email !== undefined} */}
+                {/*     warningMsg={valErrors.email?.message ?? ""} */}
+                {/* /> */}
                 <FormStringInput
                     label="Password"
                     type="password"
