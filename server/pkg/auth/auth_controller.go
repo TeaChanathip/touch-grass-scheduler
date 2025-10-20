@@ -157,6 +157,11 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 	})
 }
 
+func (controller *AuthController) Logout(ctx *gin.Context) {
+	controller.setAccessTokenCookie(ctx, "")
+	ctx.Status(http.StatusOK)
+}
+
 // ======================== HELPER METHODS ========================
 
 func (controller *AuthController) setAccessTokenCookie(ctx *gin.Context, accessToken string) {

@@ -8,4 +8,5 @@ const (
 	GetRegistrationMailV1 AuthEndpoint = "api/v1/auth/registration-mail"
 	RegisterV1            AuthEndpoint = "api/v1/auth/register"
 	LoginV1               AuthEndpoint = "api/v1/auth/login"
+	LogoutV1              AuthEndpoint = "api/v1/auth/logout"
 )

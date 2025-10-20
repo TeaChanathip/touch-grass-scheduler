@@ -14,6 +14,7 @@ type AuthRoutesParams struct {
 	Router               *gin.Engine
 	AuthController       *AuthController
 	RequestBodyValidator *middlewarefx.RequestBodyValidator
+	AuthMiddleware       *middlewarefx.AuthMiddleware
 }
 
 type AuthRoutes struct {
@@ -21,6 +22,7 @@ type AuthRoutes struct {
 	Router               *gin.Engine
 	AuthController       *AuthController
 	RequestBodyValidator *middlewarefx.RequestBodyValidator
+	AuthMiddleware       *middlewarefx.AuthMiddleware
 }
 
 func NewAuthRoutes(params AuthRoutesParams) *AuthRoutes {
@@ -29,6 +31,7 @@ func NewAuthRoutes(params AuthRoutesParams) *AuthRoutes {
 		Router:               params.Router,
 		AuthController:       params.AuthController,
 		RequestBodyValidator: params.RequestBodyValidator,
+		AuthMiddleware:       params.AuthMiddleware,
 	}
 }
 
@@ -47,4 +50,8 @@ func (routes *AuthRoutes) Setup() {
 	routes.Router.POST(string(endpoints.LoginV1),
 		routes.RequestBodyValidator.Handler("login", LoginBody{}),
 		routes.AuthController.Login)
+
+	routes.Router.POST(string(endpoints.LogoutV1),
+		routes.AuthMiddleware.Handler(),
+		routes.AuthController.Logout)
 }

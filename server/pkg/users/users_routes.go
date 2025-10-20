@@ -36,11 +36,11 @@ func NewUsersRoutes(params UsersRoutesParams) *UsersRoutes {
 func (routes *UsersRoutes) Setup() {
 	routes.Logger.Info("Setting up [Users] routes.")
 
-	routes.Router.GET(string(endpoints.GetUserV1),
+	routes.Router.GET(string(endpoints.GetMeV1),
 		routes.AuthMiddleware.Handler(),
-		routes.UsersController.GetUser)
+		routes.UsersController.GetMe)
 
-	routes.Router.GET(string(endpoints.GetUserV1)+"/:id",
+	routes.Router.GET(string(endpoints.GetUserWithIDV1)+"/:id",
 		routes.AuthMiddleware.HandlerWithRole(types.UserRoleAdmin),
 		routes.UsersController.GetUserByID)
 

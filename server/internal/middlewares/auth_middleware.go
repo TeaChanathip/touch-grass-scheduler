@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"slices"
-	"strings"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
@@ -34,9 +33,8 @@ func NewAuthMiddleware(params AuthMiddlewareParams) *AuthMiddleware {
 }
 
 func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserRole, error) {
-	accessTokenString := strings.TrimSpace(strings.TrimPrefix(ctx.Request.Header.Get("Authorization"), "Bearer"))
-
-	if accessTokenString == "" {
+	accessTokenString, err := ctx.Cookie("accessToken")
+	if err != nil || accessTokenString == "" {
 		return "", "", errors.New("missing accessToken")
 	}
 
