@@ -12,8 +12,14 @@ type MockAuthService struct {
 
 var _ authfx.AuthServiceInterface = (*MockAuthService)(nil)
 
-func (m *MockAuthService) Register(body *authfx.RegisterBody) (*models.PublicUser, string, error) {
-	args := m.Called(body)
+func (m *MockAuthService) GetRegistrationMail(email string) error {
+	args := m.Called(email)
+
+	return args.Error(0)
+}
+
+func (m *MockAuthService) Register(registrationTokenString string, body *authfx.RegisterBody) (*models.PublicUser, string, error) {
+	args := m.Called(registrationTokenString, body)
 
 	if args.Get(0) == nil {
 		return nil, args.String(1), args.Error(2)

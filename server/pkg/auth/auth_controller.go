@@ -137,7 +137,7 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 	loginBody, _ := validatedBody.(*LoginBody)
 
 	// Business logic
-	user, token, err := controller.AuthService.Login(loginBody)
+	user, accessToken, err := controller.AuthService.Login(loginBody)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
@@ -152,8 +152,8 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"user":  userMap,
-		"token": token,
+		"user":        userMap,
+		"accessToken": accessToken,
 	})
 }
 

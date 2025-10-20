@@ -3,7 +3,6 @@ package authfx
 import (
 	"errors"
 	"net/mail"
-	"time"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
@@ -86,10 +85,11 @@ func (service *AuthService) Register(registrationTokenString string, body *Regis
 	// Parse registerToken
 	registrationToken, err := common.ParseJWTToken(registrationTokenString, service.AppConfig.JWTSecret)
 	if err != nil {
+		service.Logger.Debug("Error parsing registrationToken", zap.Error(err))
 		return nil, "", common.ErrActionTokenParsing
 	}
 
-	// Get email from token claims
+	// Get email from accessToken claims
 	claims, ok := registrationToken.Claims.(jwt.MapClaims)
 	if !ok || !registrationToken.Valid {
 		service.Logger.Debug("Error getting claims from registrationToken")
@@ -115,7 +115,7 @@ func (service *AuthService) Register(registrationTokenString string, body *Regis
 		return nil, "", err
 	}
 
-	// Generate JWT token
+	// Generate JWT accessToken
 	accessToken, err := service.generateAccessToken(user)
 	if err != nil {
 		return nil, "", err
@@ -135,7 +135,7 @@ func (service *AuthService) Login(body *LoginBody) (*models.PublicUser, string, 
 		return nil, "", common.ErrInvalidCredentials
 	}
 
-	// Generate JWT token
+	// Generate JWT accessToken
 	accessToken, err := service.generateAccessToken(user)
 	if err != nil {
 		return nil, "", err
@@ -151,18 +151,15 @@ func (service *AuthService) Verify(verificationToken string) error {
 // ======================== HELPER METHODS ========================
 
 func (service *AuthService) generateRegistrationToken(email string) (string, error) {
-	// Get expired duration from ENV
-	exp := time.Now().Add(time.Duration(service.AppConfig.JWTExpiresIn) * time.Hour)
+	claims := jwt.MapClaims{
+		"email": email,
+	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"email": email,
-			"exp":   jwt.NewNumericDate(exp),
-		})
-
-	signedToken, err := token.SignedString([]byte(service.AppConfig.JWTSecret))
+	signedToken, err := common.GenerateJTWToken(claims,
+		service.AppConfig.JWTSecret,
+		service.AppConfig.JWTExpiresIn)
 	if err != nil {
-		service.Logger.Error("Internal error while signing the JWT:", zap.Error(err))
+		service.Logger.Error("Internal error while signing JWT registrationToken:", zap.Error(err))
 		return "", common.ErrTokenGeneration
 	}
 
@@ -170,21 +167,18 @@ func (service *AuthService) generateRegistrationToken(email string) (string, err
 }
 
 func (service *AuthService) generateAccessToken(user *models.User) (string, error) {
-	// Get expired duration from ENV
-	exp := time.Now().Add(time.Duration(service.AppConfig.JWTExpiresIn) * time.Hour)
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"role":    user.Role,
+	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"user_id": user.ID,
-			"role":    user.Role,
-			"exp":     jwt.NewNumericDate(exp),
-		})
-
-	singedToken, err := token.SignedString([]byte(service.AppConfig.JWTSecret))
+	signedToken, err := common.GenerateJTWToken(claims,
+		service.AppConfig.JWTSecret,
+		service.AppConfig.JWTExpiresIn)
 	if err != nil {
-		service.Logger.Error("Internal error while signing the JWT:", zap.Error(err))
+		service.Logger.Error("Internal error while signing JWT accessToken:", zap.Error(err))
 		return "", common.ErrTokenGeneration
 	}
 
-	return singedToken, nil
+	return signedToken, nil
 }

@@ -17,7 +17,7 @@ func (e CustomError) Error() string {
 
 var (
 	// 500 Internal Server Errors
-	ErrTokenGeneration = CustomError{StatusCode: http.StatusInternalServerError, Message: "token generation failed"}
+	ErrTokenGeneration = CustomError{StatusCode: http.StatusInternalServerError, Message: "accessToken generation failed"}
 	ErrPasswordHashing = CustomError{StatusCode: http.StatusInternalServerError, Message: "password hashing failed"}
 	ErrDatabase        = CustomError{StatusCode: http.StatusInternalServerError, Message: "database error"}
 	ErrMailHTMLSetting = CustomError{StatusCode: http.StatusInternalServerError, Message: "set HTML to mail message failed"}
@@ -26,8 +26,8 @@ var (
 
 	// 400 Bad Request
 	ErrDuplicatedEmail          = CustomError{StatusCode: http.StatusBadRequest, Message: "email already exists"}
-	ErrActionTokenParsing       = CustomError{StatusCode: http.StatusBadRequest, Message: "action token parsing failed"}
-	ErrActionTokenClaimsGetting = CustomError{StatusCode: http.StatusBadRequest, Message: "action token getting claims failed"}
+	ErrActionTokenParsing       = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken parsing failed"}
+	ErrActionTokenClaimsGetting = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken getting claims failed"}
 
 	// 401 Authentication Errors
 	ErrInvalidCredentials = CustomError{StatusCode: http.StatusUnauthorized, Message: "invalid credentials"}

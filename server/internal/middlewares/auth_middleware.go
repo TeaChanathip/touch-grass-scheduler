@@ -47,10 +47,10 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 		return "", "", errors.New("invalid accessToken")
 	}
 
-	// Validate token claims
+	// Validate accessToken claims
 	claims, ok := accessToken.Claims.(jwt.MapClaims)
 	if !ok || !accessToken.Valid {
-		return "", "", errors.New("invalid token claims")
+		return "", "", errors.New("invalid accessToken claims")
 	}
 
 	// Extract user ID and role from claims

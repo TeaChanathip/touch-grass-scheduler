@@ -9,6 +9,7 @@ import (
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/test/unit/mocks"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -32,21 +33,27 @@ func TestAuthService_Register_Success(t *testing.T) {
 		LastName:  "Smith",
 		Phone:     "+66912345678",
 		Gender:    types.UserGenderMale,
-		Email:     "johnsmith@gmail.com",
 		Password:  "12345678",
 		SchoolNum: "1",
 	}
+
+	// Compute mock registrationToken
+	claims := jwt.MapClaims{
+		"email": "johnsmith@gmail.com",
+	}
+	registrationTokenString, err := common.GenerateJTWToken(claims, "test-secret", 24)
+	assert.NoError(t, err)
 
 	// Setup mock expectation
 	mockUserService.On("CreateUser", mock.AnythingOfType("*models.User")).Return(nil)
 
 	// ------------------ Act ----------------------
-	user, token, err := authService.Register(registerBody)
+	user, accessToken, err := authService.Register(registrationTokenString, registerBody)
 
 	// ------------------ Assert -------------------
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
-	assert.NotEmpty(t, token)
+	assert.NotEmpty(t, accessToken)
 	assert.Equal(t, types.UserRoleStudent, user.Role)
 	assert.Equal(t, "John", user.FirstName)
 	assert.Empty(t, user.MiddleName)
@@ -63,7 +70,12 @@ func TestAuthService_Register_Success(t *testing.T) {
 func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 	// ------------------ Arrange ------------------
 	mockUserService := new(mocks.MockUserService)
-	authService := &authfx.AuthService{UserService: mockUserService}
+	authService := &authfx.AuthService{
+		UserService: mockUserService,
+		AppConfig: &configfx.AppConfig{
+			JWTSecret: "test-secret",
+		},
+	}
 
 	registerBody := &authfx.RegisterBody{
 		Role:      types.UserRoleStudent,
@@ -71,22 +83,28 @@ func TestAuthService_Register_DuplicateEmail(t *testing.T) {
 		LastName:  "Smith",
 		Phone:     "+66912345678",
 		Gender:    types.UserGenderMale,
-		Email:     "duplicate@gmail.com",
 		Password:  "12345678",
 		SchoolNum: "1",
 	}
+
+	// Compute mock registrationToken
+	claims := jwt.MapClaims{
+		"email": "duplicate@gmail.com",
+	}
+	registrationTokenString, err := common.GenerateJTWToken(claims, "test-secret", 24)
+	assert.NoError(t, err)
 
 	// Setup mock expectation
 	mockUserService.On("CreateUser", mock.AnythingOfType("*models.User")).Return(common.ErrDuplicatedEmail)
 
 	// ------------------ Act ----------------------
-	user, token, err := authService.Register(registerBody)
+	user, accessToken, err := authService.Register(registrationTokenString, registerBody)
 
 	// ------------------ Assert -------------------
 	assert.Error(t, err)
 	assert.Equal(t, common.ErrDuplicatedEmail, err)
 	assert.Nil(t, user)
-	assert.Empty(t, token)
+	assert.Empty(t, accessToken)
 
 	// Verify the mock was called exactly once
 	mockUserService.AssertExpectations(t)
@@ -121,12 +139,12 @@ func TestAuthService_Login_Success(t *testing.T) {
 	mockUserService.On("GetUserByEmail", "johnsmith@gmail.com").Return(expectedUser, nil)
 
 	// ------------------ Act ----------------------
-	user, token, err := authService.Login(loginBody)
+	user, accessToken, err := authService.Login(loginBody)
 
 	// ------------------ Assert -------------------
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
-	assert.NotEmpty(t, token)
+	assert.NotEmpty(t, accessToken)
 	assert.Equal(t, "johnsmith@gmail.com", user.Email)
 
 	// Verify the mock was called exactly once
@@ -147,13 +165,13 @@ func TestAuthService_Login_EmailNotExist(t *testing.T) {
 	mockUserService.On("GetUserByEmail", "johnsmith@gmail.com").Return(nil, common.ErrUserNotFound)
 
 	// ------------------ Act ----------------------
-	user, token, err := authService.Login(loginBody)
+	user, accessToken, err := authService.Login(loginBody)
 
 	// ------------------ Assert -------------------
 	assert.Error(t, err)
 	assert.Equal(t, common.ErrInvalidCredentials, err)
 	assert.Nil(t, user)
-	assert.Empty(t, token)
+	assert.Empty(t, accessToken)
 
 	// Verify the mock was called exactly once
 	mockUserService.AssertExpectations(t)
@@ -178,13 +196,13 @@ func TestAuthService_Login_InvalidPassword(t *testing.T) {
 	mockUserService.On("GetUserByEmail", "johnsmith@gmail.com").Return(expectedUser, nil)
 
 	// ------------------ Act ----------------------
-	user, token, err := authService.Login(loginBody)
+	user, accessToken, err := authService.Login(loginBody)
 
 	// ------------------ Assert -------------------
 	assert.Error(t, err)
 	assert.Equal(t, common.ErrInvalidCredentials, err)
 	assert.Nil(t, user)
-	assert.Empty(t, token)
+	assert.Empty(t, accessToken)
 
 	// Verify the mock was called exactly once
 	mockUserService.AssertExpectations(t)

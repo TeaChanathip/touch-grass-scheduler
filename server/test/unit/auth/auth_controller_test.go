@@ -43,7 +43,6 @@ func TestAuthController_Register_Success(t *testing.T) {
 		LastName:  "Smith",
 		Phone:     "+66912345678",
 		Gender:    types.UserGenderMale,
-		Email:     "johnsmith@gmail.com",
 		Password:  "12345678",
 		SchoolNum: "12345",
 	}
@@ -61,10 +60,13 @@ func TestAuthController_Register_Success(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
+	ctx.Params = gin.Params{
+		{Key: "registrationToken", Value: "testregistrationtoken"},
+	}
 	ctx.Set("validatedBody", registerBody)
 
 	// Setup mock expectation
-	mockAuthService.On("Register", registerBody).Return(expectedUser, "testtokenvalue", nil)
+	mockAuthService.On("Register", "testregistrationtoken", registerBody).Return(expectedUser, "testaccesstokenvalue", nil)
 
 	// ------------------ Act ----------------------
 	authController.Register(ctx)
@@ -82,9 +84,9 @@ func TestAuthController_Register_Success(t *testing.T) {
 	userMap, _ := responseBody["user"].(map[string]any)
 	assert.Equal(t, "johnsmith@gmail.com", userMap["email"])
 
-	// Verify token
-	assert.Contains(t, responseBody, "token")
-	assert.Equal(t, responseBody["token"], "testtokenvalue")
+	// Verify accessToken
+	assert.Contains(t, responseBody, "accessToken")
+	assert.Equal(t, responseBody["accessToken"], "testaccesstokenvalue")
 
 	// Verify mock was called
 	mockAuthService.AssertExpectations(t)
@@ -110,12 +112,14 @@ func TestAuthController_Register_MissingRequiredSchoolNum(t *testing.T) {
 			LastName:  "Smith",
 			Phone:     "+66912345678",
 			Gender:    types.UserGenderMale,
-			Email:     "johnsmith@gmail.com",
 			Password:  "12345678",
 		}
 
 		w := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{
+			{Key: "registrationToken", Value: "testregistrationtoken"},
+		}
 		ctx.Set("validatedBody", registerBody)
 
 		// ------------------ Act ----------------------
@@ -146,13 +150,15 @@ func TestAuthController_Register_UnexpectedSchoolNum(t *testing.T) {
 		LastName:  "Smith",
 		Phone:     "+66912345678",
 		Gender:    types.UserGenderMale,
-		Email:     "johnsmith@gmail.com",
 		Password:  "12345678",
 		SchoolNum: "92839",
 	}
 
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
+	ctx.Params = gin.Params{
+		{Key: "registrationToken", Value: "testregistrationtoken"},
+	}
 	ctx.Set("validatedBody", registerBody)
 
 	// ------------------ Act ----------------------
@@ -192,17 +198,19 @@ func TestAuthController_Register_InternalServerError(t *testing.T) {
 			LastName:  "Smith",
 			Phone:     "+66912345678",
 			Gender:    types.UserGenderMale,
-			Email:     "johnsmith@gmail.com",
 			Password:  "12345678",
 			SchoolNum: "1",
 		}
 
 		w := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(w)
+		ctx.Params = gin.Params{
+			{Key: "registrationToken", Value: "testregistrationtoken"},
+		}
 		ctx.Set("validatedBody", registerBody)
 
 		// Setup mock expectation
-		mockAuthService.On("Register", registerBody).Return(nil, "", tc.errType)
+		mockAuthService.On("Register", "testregistrationtoken", registerBody).Return(nil, "", tc.errType)
 
 		// ------------------ Act ----------------------
 		authController.Register(ctx)
@@ -258,7 +266,7 @@ func TestAuthController_Login_Success(t *testing.T) {
 	ctx.Set("validatedBody", loginBody)
 
 	// Setup mock expectation
-	mockAuthService.On("Login", loginBody).Return(expectedUser, "testtokenvalue", nil)
+	mockAuthService.On("Login", loginBody).Return(expectedUser, "testaccesstokenvalue", nil)
 
 	// ------------------ Act ----------------------
 	authController.Login(ctx)
@@ -276,9 +284,9 @@ func TestAuthController_Login_Success(t *testing.T) {
 	userMap, _ := responseBody["user"].(map[string]any)
 	assert.Equal(t, "johnsmith@gmail.com", userMap["email"])
 
-	// Verify token
-	assert.Contains(t, responseBody, "token")
-	assert.Equal(t, responseBody["token"], "testtokenvalue")
+	// Verify accessToken
+	assert.Contains(t, responseBody, "accessToken")
+	assert.Equal(t, responseBody["accessToken"], "testaccesstokenvalue")
 
 	// Verify mock was called
 	mockAuthService.AssertExpectations(t)

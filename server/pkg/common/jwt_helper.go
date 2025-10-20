@@ -2,9 +2,25 @@ package common
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+func GenerateJTWToken(claims jwt.MapClaims, jwtSecret string, jwtExpiresIn int) (string, error) {
+	// Compute token expiration
+	exp := time.Now().Add(time.Duration(jwtExpiresIn) * time.Hour)
+	claims["exp"] = jwt.NewNumericDate(exp)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	singedToken, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", err
+	}
+
+	return singedToken, nil
+}
 
 func ParseJWTToken(tokenString string, jwtSecret string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
