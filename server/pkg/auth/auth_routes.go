@@ -1,6 +1,7 @@
 package authfx
 
 import (
+	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/endpoints"
 	middlewarefx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/middlewares"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -32,14 +33,18 @@ func NewAuthRoutes(params AuthRoutesParams) *AuthRoutes {
 }
 
 func (routes *AuthRoutes) Setup() {
-	routes.Logger.Info("Setting up [Auth] routes.")
-	authGroup := routes.Router.Group("api/v1/auth")
+	// routes.Logger.Info("Setting up [Auth] routes.")
 
-	authGroup.POST("/register",
+	routes.Router.GET(string(endpoints.GetRegistrationMailV1),
+		routes.RequestBodyValidator.Handler("registration-mail", GetRegistrationMailBody{}),
+		routes.AuthController.GetRegistrationMail,
+	)
+
+	routes.Router.POST(string(endpoints.RegisterV1)+"/:registrationToken",
 		routes.RequestBodyValidator.Handler("register", RegisterBody{}),
 		routes.AuthController.Register)
 
-	authGroup.POST("/login",
+	routes.Router.POST(string(endpoints.LoginV1),
 		routes.RequestBodyValidator.Handler("login", LoginBody{}),
 		routes.AuthController.Login)
 }

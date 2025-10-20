@@ -6,6 +6,7 @@ import (
 	middlewarefx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/middlewares"
 	authfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/auth"
 	libfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/lib"
+	mailfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/mail"
 	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
 	"go.uber.org/fx"
 )
@@ -17,7 +18,8 @@ func main() {
 		configfx.Module,
 		libfx.Module,
 
-		// Routes
+		// Service
+		mailfx.Module,
 		usersfx.Module,
 		authfx.Module,
 

@@ -20,13 +20,25 @@ type AppConfig struct {
 	DBUser     string `env:"DB_USER" envDefault:"postgres"`
 	DBPassword string `env:"DB_PASSWORD" envDefault:"postgres"`
 	DBName     string `env:"DB_NAME" envDefault:"db"`
-	DBPort     string `env:"DB_PORT" envDefault:"5432"`
+	DBPort     int    `env:"DB_PORT" envDefault:"5432"`
 	DBSSLMode  string `env:"DB_SSLMODE" envDefault:"disable"`
 
+	// Client
+	ClientURL  string `env:"CLIENT_URL" envDefault:"http://localhost"`
+	ClientPort int    `env:"CLIENT_PORT" envDefault:"3000"`
+
 	// Server
-	AppPort      string `env:"SERVER_PORT" envDefault:"8080"`
+	AppPort int `env:"SERVER_PORT" envDefault:"8080"`
+
+	// JWT
 	JWTSecret    string `env:"JWT_SECRET,required"`
 	JWTExpiresIn int    `env:"JWT_EXPIRES_IN" envDefault:"24"`
+
+	// Mail Service
+	MailHost     string `env:"MAIL_HOST,required"`
+	MailPort     int    `env:"MAIL_PORT,required"`
+	MailUser     string `env:"MAIL_USER,required"`
+	MailPassword string `env:"MAIL_PASSWORD,required"`
 }
 
 func NewAppConfig(params AppConfigParams) *AppConfig {
@@ -49,6 +61,6 @@ func NewAppConfig(params AppConfigParams) *AppConfig {
 }
 
 func (c *AppConfig) GetDBConfig() string {
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		c.DBHost, c.DBUser, c.DBPassword, c.DBName, c.DBPort, c.DBSSLMode)
 }

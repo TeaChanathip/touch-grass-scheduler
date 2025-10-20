@@ -1,6 +1,7 @@
 package usersfx
 
 import (
+	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/endpoints"
 	middlewarefx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/middlewares"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/gin-gonic/gin"
@@ -34,10 +35,14 @@ func NewUsersRoutes(params UsersRoutesParams) *UsersRoutes {
 
 func (routes *UsersRoutes) Setup() {
 	routes.Logger.Info("Setting up [Users] routes.")
-	usersGroup := routes.Router.Group("api/v1/users")
 
-	usersGroup.GET("", routes.AuthMiddleware.Handler(), routes.UsersController.GetUser) // handles /api/v1/users
-	usersGroup.GET("/:id", routes.AuthMiddleware.HandlerWithRole(types.UserRoleAdmin), routes.UsersController.GetUserByID)
+	routes.Router.GET(string(endpoints.GetUserV1),
+		routes.AuthMiddleware.Handler(),
+		routes.UsersController.GetUser)
+
+	routes.Router.GET(string(endpoints.GetUserV1)+"/:id",
+		routes.AuthMiddleware.HandlerWithRole(types.UserRoleAdmin),
+		routes.UsersController.GetUserByID)
 
 	// usersGroup.PUT("users/:id")
 	// usersGroup.DELETE("users/:id")

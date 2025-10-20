@@ -2,6 +2,7 @@ package bootstrapfx
 
 import (
 	"context"
+	"strconv"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/gin-gonic/gin"
@@ -26,7 +27,7 @@ func registerHooks(
 
 				// Start the router by running it in a separate goroutine
 				// If it don't run in goroutine, it will lock the Fx startup process indefinitely
-				go router.Run(":" + appConfig.AppPort)
+				go router.Run(":" + strconv.Itoa(appConfig.AppPort))
 
 				return nil
 			},
@@ -41,6 +42,7 @@ func registerHooks(
 }
 
 // =============== Exports ===============
+
 var Module = fx.Module(
 	"bootstrapfx",
 	fx.Provide(NewRoutes),

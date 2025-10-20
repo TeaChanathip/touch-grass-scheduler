@@ -40,6 +40,10 @@ func NewAuthController(params AuthControllerParams) *AuthController {
 
 // ======================== REQUEST BODY ========================
 
+type GetRegistrationMailBody struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
 type RegisterBody struct {
 	Role       types.UserRole   `json:"role" binding:"required,oneof='student' 'teacher' 'guardian'"` // Not allow Admin to be registered
 	FirstName  string           `json:"first_name" binding:"required,max=128,alpha"`
@@ -47,7 +51,6 @@ type RegisterBody struct {
 	LastName   string           `json:"last_name" binding:"omitempty,max=128,alpha"`
 	Phone      string           `json:"phone" binding:"required,e164"`
 	Gender     types.UserGender `json:"gender" binding:"required,oneof=''male' 'female' 'other' 'prefer_not_to_say'"`
-	Email      string           `json:"email" binding:"required,email"`
 	Password   string           `json:"password" binding:"required,min=8,max=64"`
 	SchoolNum  string           `json:"school_num" binding:"omitempty,number,max=16"` // Be either student_num or teacher_num
 }
@@ -60,7 +63,6 @@ func (rb RegisterBody) ToUserModel() *models.User {
 		LastName:   rb.LastName,
 		Phone:      rb.Phone,
 		Gender:     rb.Gender,
-		Email:      rb.Email,
 		Password:   rb.Password,
 		SchoolNum:  rb.SchoolNum,
 	}
@@ -73,20 +75,43 @@ type LoginBody struct {
 
 // ======================== METHODS ========================
 
+func (controller *AuthController) GetRegistrationMail(ctx *gin.Context) {
+	// Get validated body from context that set by RequestBodyValidator
+	validatedBody, _ := ctx.Get("validatedBody")
+	getRegistrationMailBody, _ := validatedBody.(*GetRegistrationMailBody)
+
+	// Business logic
+	err := controller.AuthService.GetRegistrationMail(getRegistrationMailBody.Email)
+	if err != nil {
+		common.HandleBusinessLogicErr(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
 func (controller *AuthController) Register(ctx *gin.Context) {
+	// Get registrationToken from params
+	registrationTokenString, exists := ctx.Params.Get("registrationToken")
+	if !exists {
+		controller.Logger.Debug("The registrationToken is not exists.")
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "registrationToken is required"})
+		return
+	}
+
 	// Get validated body from context that set by RequestBodyValidator
 	validatedBody, _ := ctx.Get("validatedBody")
 	registerBody, _ := validatedBody.(*RegisterBody)
 
 	// Validate school number requirements
 	if err := validateSchoolNum(registerBody); err != nil {
-		controller.Logger.Debug("Validation error on register request", zap.Error(err))
+		controller.Logger.Debug("Validation error on register request:", zap.Error(err))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Business logic
-	user, token, err := controller.AuthService.Register(registerBody)
+	user, accessToken, err := controller.AuthService.Register(registrationTokenString, registerBody)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
@@ -101,8 +126,8 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
-		"user":  userMap,
-		"token": token,
+		"user":        userMap,
+		"accessToken": accessToken,
 	})
 }
 

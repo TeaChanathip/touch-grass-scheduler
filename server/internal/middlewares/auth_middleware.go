@@ -2,12 +2,13 @@ package middlewarefx
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/fx"
@@ -33,47 +34,40 @@ func NewAuthMiddleware(params AuthMiddlewareParams) *AuthMiddleware {
 }
 
 func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserRole, error) {
-	tokenString := strings.TrimSpace(strings.TrimPrefix(ctx.Request.Header.Get("Authorization"), "Bearer"))
+	accessTokenString := strings.TrimSpace(strings.TrimPrefix(ctx.Request.Header.Get("Authorization"), "Bearer"))
 
-	if tokenString == "" {
-		return "", "", errors.New("missing token")
+	if accessTokenString == "" {
+		return "", "", errors.New("missing accessToken")
 	}
 
-	m.Logger.Debug(tokenString)
+	m.Logger.Debug(accessTokenString)
 
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-		// Validate signing method
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-
-		return []byte(m.AppConfig.JWTSecret), nil
-	})
+	accessToken, err := common.ParseJWTToken(accessTokenString, m.AppConfig.JWTSecret)
 	if err != nil {
-		return "", "", errors.New("invalid token")
+		return "", "", errors.New("invalid accessToken")
 	}
 
 	// Validate token claims
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
+	claims, ok := accessToken.Claims.(jwt.MapClaims)
+	if !ok || !accessToken.Valid {
 		return "", "", errors.New("invalid token claims")
 	}
 
 	// Extract user ID and role from claims
 	userID, ok := claims["user_id"].(string)
 	if !ok {
-		return "", "", errors.New("invalid user ID in token")
+		return "", "", errors.New("invalid user ID in accessToken")
 	}
 
 	userRole, ok := claims["role"].(string)
 	if !ok {
-		return "", "", errors.New("invalid role in token")
+		return "", "", errors.New("invalid role in accessToken")
 	}
 
 	return userID, types.UserRole(userRole), nil
 }
 
-func (m *AuthMiddleware) HandlerWithRole(role types.UserRole) gin.HandlerFunc {
+func (m *AuthMiddleware) HandlerWithRole(roles ...types.UserRole) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
@@ -82,7 +76,7 @@ func (m *AuthMiddleware) HandlerWithRole(role types.UserRole) gin.HandlerFunc {
 		}
 
 		// Check if user has required role
-		if role != "" && userRole != role {
+		if !slices.Contains(roles, userRole) {
 			m.Logger.Debug("Insufficient permissions")
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
 			return
