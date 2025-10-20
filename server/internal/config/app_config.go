@@ -28,7 +28,8 @@ type AppConfig struct {
 	ClientPort int    `env:"CLIENT_PORT" envDefault:"3000"`
 
 	// Server
-	AppPort int `env:"SERVER_PORT" envDefault:"8080"`
+	AppDomain string `env:"APP_DOMAIN" envDefault:"localhost"`
+	AppPort   int    `env:"APP_PORT" envDefault:"8080"`
 
 	// JWT
 	JWTSecret    string `env:"JWT_SECRET,required"`
