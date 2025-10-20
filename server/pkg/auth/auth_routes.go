@@ -38,8 +38,7 @@ func NewAuthRoutes(params AuthRoutesParams) *AuthRoutes {
 func (routes *AuthRoutes) Setup() {
 	// routes.Logger.Info("Setting up [Auth] routes.")
 
-	routes.Router.GET(string(endpoints.GetRegistrationMailV1),
-		routes.RequestBodyValidator.Handler("registration-mail", GetRegistrationMailBody{}),
+	routes.Router.GET(string(endpoints.GetRegistrationMailV1)+"/:email",
 		routes.AuthController.GetRegistrationMail,
 	)
 

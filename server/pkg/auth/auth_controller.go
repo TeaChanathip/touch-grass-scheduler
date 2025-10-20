@@ -3,6 +3,7 @@ package authfx
 import (
 	"fmt"
 	"net/http"
+	"net/mail"
 	"slices"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
@@ -40,10 +41,6 @@ func NewAuthController(params AuthControllerParams) *AuthController {
 
 // ======================== REQUEST BODY ========================
 
-type GetRegistrationMailBody struct {
-	Email string `json:"email" binding:"required,email"`
-}
-
 type RegisterBody struct {
 	Role       types.UserRole   `json:"role" binding:"required,oneof='student' 'teacher' 'guardian'"` // Not allow Admin to be registered
 	FirstName  string           `json:"first_name" binding:"required,max=128,alpha"`
@@ -76,12 +73,16 @@ type LoginBody struct {
 // ======================== METHODS ========================
 
 func (controller *AuthController) GetRegistrationMail(ctx *gin.Context) {
-	// Get validated body from context that set by RequestBodyValidator
-	validatedBody, _ := ctx.Get("validatedBody")
-	getRegistrationMailBody, _ := validatedBody.(*GetRegistrationMailBody)
+	// Get email from params
+	email := ctx.Param("email")
+
+	// Validate email
+	if _, err := mail.ParseAddress(email); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+	}
 
 	// Business logic
-	err := controller.AuthService.GetRegistrationMail(getRegistrationMailBody.Email)
+	err := controller.AuthService.GetRegistrationMail(email)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
