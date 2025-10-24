@@ -1,7 +1,11 @@
 import { LoginPayload } from "../../../interfaces/LoginPayload.interface"
 import { RegisterPayload } from "../../../interfaces/RegisterPayload.interface"
 import { User } from "../../../interfaces/User.interface"
-import { ApiService, isApiError } from "../../../services/api.service"
+import {
+    ApiErrorResponse,
+    ApiService,
+    isApiError,
+} from "../../../services/api.service"
 import { AuthService } from "../../../services/auth/auth.service"
 import { createAppSlice } from "../../createAppSlice"
 import { UsersService } from "../../../services/users/users.service"
@@ -47,7 +51,6 @@ export const userSlice = createAppSlice({
                             message: err.message,
                         })
                     }
-                    // unexpected error
                     throw err
                 }
             },
@@ -58,15 +61,15 @@ export const userSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     state.status = "authenticated"
                     state.user = action.payload
-                    state.errMsg = ""
+                    state.errMsg = undefined
                 },
                 rejected: (state, action) => {
                     const payload = action.payload as
-                        | { status?: number; message?: string }
+                        | ApiErrorResponse
                         | undefined
 
                     state.status = "error"
-                    state.errMsg = payload?.message
+                    state.errMsg = payload?.message ?? action.error.message
                     state.user = undefined
                 },
             }
@@ -98,18 +101,26 @@ export const userSlice = createAppSlice({
                 },
                 rejected: (state, action) => {
                     const payload = action.payload as
-                        | { status?: number; message?: string }
+                        | ApiErrorResponse
                         | undefined
 
-                    // 401 Unauthorized
-                    if (payload?.status === 401) {
-                        state.status = "unauthenticated"
-                        state.errMsg = ""
-                    } else {
+                    state.user = undefined
+
+                    // Other errors
+                    if (payload === undefined) {
                         state.status = "error"
                         state.errMsg = action.error.message
+                        return
                     }
-                    state.user = undefined
+
+                    // ApiError
+                    if (payload?.status === 401) {
+                        state.status = "unauthenticated"
+                        state.errMsg = "Invalid email or password"
+                    } else {
+                        state.status = "error"
+                        state.errMsg = payload?.message
+                    }
                 },
             }
         ),
@@ -142,9 +153,9 @@ export const userSlice = createAppSlice({
                         | { status?: number; message?: string }
                         | undefined
 
-                    state.user = undefined
                     state.status = "error"
-                    state.errMsg = payload?.message
+                    state.errMsg = payload?.message ?? action.error.message
+                    state.user = undefined
                 },
             }
         ),
@@ -178,6 +189,16 @@ export const userSlice = createAppSlice({
                         | { status?: number; message?: string }
                         | undefined
 
+                    state.user = undefined
+
+                    // Other errors
+                    if (payload === undefined) {
+                        state.status = "error"
+                        state.errMsg = action.error.message
+                        return
+                    }
+
+                    // ApiError
                     if (payload?.status === 401) {
                         state.status = "idle"
                         state.errMsg = undefined
@@ -185,7 +206,6 @@ export const userSlice = createAppSlice({
                         state.status = "error"
                         state.errMsg = payload?.message
                     }
-                    state.user = undefined
                 },
             }
         ),

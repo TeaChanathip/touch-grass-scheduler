@@ -1,11 +1,3 @@
-type Variant = "info" | "success" | "error"
-
-const variantColorMap = new Map<Variant, string>([
-    ["info", "var(--color-prim-gray-200)"],
-    ["success", "var(--color-prim-green-600)"],
-    ["error", "var(--color-prim-red)"],
-])
-
 export default function ResponseMessage({
     msg,
     variant,
@@ -24,3 +16,11 @@ export default function ResponseMessage({
         <p className="text-xl">&nbsp;</p>
     )
 }
+
+type Variant = "info" | "success" | "error"
+
+const variantColorMap = new Map<Variant, string>([
+    ["info", "var(--color-prim-gray-200)"],
+    ["success", "var(--color-prim-green-600)"],
+    ["error", "var(--color-prim-red)"],
+])

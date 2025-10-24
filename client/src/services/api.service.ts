@@ -130,9 +130,9 @@ export class ApiService {
 }
 
 export class ApiError extends Error {
-    status?: number
+    status: number
 
-    constructor(message: string, status?: number) {
+    constructor(message: string, status: number) {
         super(message)
         this.name = "ApiError"
         this.status = status
@@ -141,4 +141,9 @@ export class ApiError extends Error {
 
 export function isApiError(e: unknown): e is ApiError {
     return typeof e === "object" && e !== null && (e as any).name === "ApiError"
+}
+
+export interface ApiErrorResponse {
+    status: number
+    message: string
 }

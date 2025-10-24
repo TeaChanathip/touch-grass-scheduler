@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, UseFormHandleSubmit } from "react-hook-form"
 import FormStringInput from "../../components/FormInput"
 import MyButton from "../../components/MyButton"
 import Link from "next/link"
@@ -12,122 +12,121 @@ import {
     selectUserErrMsg,
     selectUserStatus,
 } from "../../store/features/user/userSlice"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { CircularProgress } from "@mui/material"
+import PageLayout from "../../layout/PageLayout"
+import ResponseMessage from "../../components/ResponseMessage"
 
 export default function LoginPage() {
     // Store
-    const dispatch = useAppDispatch()
     const userStatus = useAppSelector(selectUserStatus)
-    const userErrMsg = useAppSelector(selectUserErrMsg)
 
-    const [errMsg, setErrMsg] = useState("")
+    // Hooks
     const router = useRouter()
 
-    // Define schema for validation
-    const schema = z.object({
-        email: z.email("Invalid email format"),
-        password: z
-            .string()
-            .min(8, "At least 8 characters")
-            .max(64, "At most 64 characters"),
-    })
+    useEffect(() => {
+        if (userStatus === "authenticated") {
+            router.push("/")
+        }
+    }, [userStatus, router])
 
-    // Use react-hook-form
+    return (
+        <PageLayout title="Login">
+            <LoginForm />
+        </PageLayout>
+    )
+}
+
+// Form Schema
+const schema = z.object({
+    email: z.email("Invalid email format"),
+    password: z
+        .string()
+        .min(8, "At least 8 characters")
+        .max(64, "At most 64 characters"),
+})
+
+function LoginForm() {
+    // Hooks
     const {
         register,
         handleSubmit,
-        formState: { errors: valErrors },
+        formState: { errors: valErrors, isSubmitting },
     } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
 
-    // Submit Handler
-    const onSubmit = (formData: z.infer<typeof schema>) => {
+    return (
+        <form className="w-[70vw] max-w-96 flex flex-col gap-5">
+            <FormStringInput
+                label="Email Address"
+                type="email"
+                required
+                register={register("email")}
+                warn={valErrors.email != undefined}
+                warningMsg={valErrors.email?.message ?? ""}
+            />
+            <FormStringInput
+                label="Password"
+                type="password"
+                required
+                register={register("password")}
+                warn={valErrors.password != undefined}
+                warningMsg={valErrors.password?.message ?? ""}
+            />
+            <ButtonSection
+                handleSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
+                hasValidationErr={Object.keys(valErrors).length != 0}
+            />
+        </form>
+    )
+}
+
+function ButtonSection({
+    handleSubmit,
+    isSubmitting,
+    hasValidationErr,
+}: {
+    handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
+    isSubmitting: boolean
+    hasValidationErr: boolean
+}) {
+    // Store
+    const dispatch = useAppDispatch()
+    const userErrMsg = useAppSelector(selectUserErrMsg)
+
+    // Hooks
+    const router = useRouter()
+
+    const submitHandler = async (formData: z.infer<typeof schema>) => {
         const result = schema.safeParse(formData)
-        if (result.success) {
-            dispatch(userLogin(result.data))
-        } else {
-            setErrMsg("Validation Error")
-        }
+        await dispatch(userLogin(result.data!)) // Garanteed to be valid
     }
 
-    useEffect(() => {
-        switch (userStatus) {
-            case "authenticated":
-                router.push("/")
-                break
-            case "unauthenticated":
-                setErrMsg("Incorrect Email or Password")
-                break
-            case "error":
-                setErrMsg(userErrMsg ?? "Unknown Error")
-                break
-            default:
-                setErrMsg("")
-                break
-        }
-    }, [userStatus, userErrMsg, router])
-
     return (
-        <div className="flex flex-col gap-10 items-center pt-10">
-            <h1 className="text-5xl">LOGIN</h1>
-
-            <form
-                onSubmit={handleSubmit(onSubmit)}
-                className="w-[70vw] max-w-96 flex flex-col gap-5"
-            >
-                <FormStringInput
-                    label="Email Address"
-                    type="email"
-                    required
-                    register={register("email")}
-                    warn={valErrors.email != undefined}
-                    warningMsg={valErrors.email?.message ?? ""}
-                />
-                <FormStringInput
-                    label="Password"
-                    type="password"
-                    required
-                    register={register("password")}
-                    warn={valErrors.password != undefined}
-                    warningMsg={valErrors.password?.message ?? ""}
-                />
-                <Link
-                    href="/forgot-password"
-                    className="w-fit self-center underline"
+        <section className="flex flex-col items-center">
+            <Link href="/forgot-password" className="w-fit mb-3 underline">
+                Forgot the password?
+            </Link>
+            <ResponseMessage msg={userErrMsg} variant="error" />
+            <div className="w-full mt-3 flex flex-col md:flex-row gap-5">
+                <MyButton
+                    variant="positive"
+                    type="submit"
+                    className="w-full md:w-44"
+                    disabled={hasValidationErr || isSubmitting}
+                    onClick={handleSubmit(submitHandler)}
                 >
-                    Forgot the password?
-                </Link>
-                <div className="mt-3 flex flex-col md:flex-row gap-5 justify-center">
-                    <MyButton
-                        variant="positive"
-                        type="submit"
-                        className="w-full md:w-44"
-                        disabled={
-                            Object.keys(valErrors).length > 0 ||
-                            userStatus == "loading"
-                        }
-                    >
-                        Login
-                    </MyButton>
-                    <MyButton
-                        variant="neutral"
-                        type="button"
-                        className="w-full md:w-44"
-                        onClick={() => router.push("/register/verify-email")}
-                    >
-                        Register
-                    </MyButton>
-                </div>
-            </form>
-            {userStatus != "loading" && errMsg && (
-                <p className="text-prim-red">{errMsg}</p>
-            )}
-            {userStatus == "loading" && (
-                <span className="text-prim-green-400">
-                    <CircularProgress color="inherit" />
-                </span>
-            )}
-        </div>
+                    Login
+                </MyButton>
+                <MyButton
+                    variant="neutral"
+                    type="button"
+                    className="w-full md:w-44"
+                    onClick={() => router.push("/register/verify-email")}
+                >
+                    Register
+                </MyButton>
+            </div>
+        </section>
     )
 }
