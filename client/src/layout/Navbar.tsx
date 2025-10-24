@@ -7,8 +7,8 @@ import React, { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
 import {
-    getMe,
-    logout,
+    userGetMe,
+    userLogout,
     selectUser,
     selectUserStatus,
 } from "../store/features/user/userSlice"
@@ -42,7 +42,7 @@ export default function Navbar() {
 
     // TODO: Migrate to use Reach Server Component?
     useEffect(() => {
-        dispatch(getMe())
+        dispatch(userGetMe())
     }, [dispatch])
 
     useEffect(() => {
@@ -173,7 +173,7 @@ function NavPanel({
     }
 
     const logoutBtnHandler = () => {
-        dispatch(logout())
+        dispatch(userLogout())
     }
 
     return (

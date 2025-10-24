@@ -26,7 +26,7 @@ export const userSlice = createAppSlice({
     name: "user",
     initialState,
     reducers: (create) => ({
-        register: create.asyncThunk(
+        userRegister: create.asyncThunk(
             async (
                 payload: {
                     registrationToken: string
@@ -71,7 +71,7 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
-        login: create.asyncThunk(
+        userLogin: create.asyncThunk(
             async (payload: LoginPayload, { rejectWithValue }) => {
                 try {
                     const { user } = await authService.login(payload)
@@ -113,7 +113,7 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
-        logout: create.asyncThunk(
+        userLogout: create.asyncThunk(
             async (_, { rejectWithValue }) => {
                 try {
                     await authService.logout()
@@ -148,7 +148,7 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
-        getMe: create.asyncThunk(
+        userGetMe: create.asyncThunk(
             async (_, { rejectWithValue }) => {
                 try {
                     const { user } = await usersService.getMe()
@@ -198,7 +198,8 @@ export const userSlice = createAppSlice({
 })
 
 // Actions
-export const { login, register, logout, getMe } = userSlice.actions
+export const { userLogin, userRegister, userLogout, userGetMe } =
+    userSlice.actions
 
 // Selectors
 export const { selectUser, selectUserStatus, selectUserErrMsg } =

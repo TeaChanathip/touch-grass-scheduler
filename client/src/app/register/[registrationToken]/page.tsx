@@ -17,7 +17,7 @@ import {
 } from "../../../store/features/user/userSlice"
 import { useParams, useRouter } from "next/navigation"
 import { CircularProgress } from "@mui/material"
-import { register as registerAction } from "../../../store/features/user/userSlice"
+import { userRegister } from "../../../store/features/user/userSlice"
 import { RegisterPayload } from "../../../interfaces/RegisterPayload.interface"
 import parsePhoneNumberFromString, {
     isValidPhoneNumber,
@@ -67,7 +67,6 @@ export default function RegisterPage() {
                 .min(1, "Required")
                 .max(16, "Too long")
                 .optional(),
-            // email: z.email("Invalid email"),
             password: z.string().min(8, "Min 8 characters").max(64, "Too long"),
             confirm_password: z
                 .string()
@@ -121,7 +120,7 @@ export default function RegisterPage() {
             }
 
             dispatch(
-                registerAction({
+                userRegister({
                     registrationToken: params.registrationToken,
                     registerPayload: registerPayload,
                 })

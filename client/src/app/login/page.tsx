@@ -8,7 +8,7 @@ import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useAppDispatch, useAppSelector } from "../../store/hooks"
 import {
-    login,
+    userLogin,
     selectUserErrMsg,
     selectUserStatus,
 } from "../../store/features/user/userSlice"
@@ -45,7 +45,7 @@ export default function LoginPage() {
     const onSubmit = (formData: z.infer<typeof schema>) => {
         const result = schema.safeParse(formData)
         if (result.success) {
-            dispatch(login(result.data))
+            dispatch(userLogin(result.data))
         } else {
             setErrMsg("Validation Error")
         }
@@ -114,7 +114,7 @@ export default function LoginPage() {
                         variant="neutral"
                         type="button"
                         className="w-full md:w-44"
-                        onClick={() => router.push("/register")}
+                        onClick={() => router.push("/register/verify-email")}
                     >
                         Register
                     </MyButton>
