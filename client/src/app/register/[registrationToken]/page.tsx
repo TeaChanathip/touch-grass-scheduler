@@ -95,13 +95,15 @@ function RegisterForm() {
     const {
         register,
         handleSubmit,
-        formState: { errors: valErrors },
+        formState: { errors: valErrors, isSubmitting },
         watch,
         setValue,
+        trigger,
     } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
 
     // Watch
     const currentRole = watch("role")
+    const currentPwd = watch("password")
 
     // Clear school_num if role is not school personnel
     useEffect(() => {
@@ -109,6 +111,13 @@ function RegisterForm() {
             setValue("school_num", undefined)
         }
     }, [setValue, currentRole])
+
+    // Trigger confirm_password validation when password is changed
+    useEffect(() => {
+        if (currentPwd) {
+            trigger("confirm_password")
+        }
+    }, [currentPwd, trigger])
 
     // Constants
     const schoolPersonnelRoles: UserRole[] = [
@@ -199,6 +208,7 @@ function RegisterForm() {
             />
             <ButtonSection
                 handleSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
                 hasValidationErr={Object.keys(valErrors).length != 0}
             />
         </form>
@@ -207,9 +217,11 @@ function RegisterForm() {
 
 function ButtonSection({
     handleSubmit,
+    isSubmitting,
     hasValidationErr,
 }: {
     handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
+    isSubmitting: boolean
     hasValidationErr: boolean
 }) {
     // Store
@@ -256,7 +268,7 @@ function ButtonSection({
             <MyButton
                 variant="positive"
                 type="submit"
-                disabled={hasValidationErr}
+                disabled={isSubmitting || hasValidationErr}
                 onClick={handleSubmit(submitHandler)}
                 className="mt-3 w-full md:w-44 self-center"
             >
@@ -265,5 +277,3 @@ function ButtonSection({
         </section>
     )
 }
-
-// TODO: Fix zod refine not update in real-time

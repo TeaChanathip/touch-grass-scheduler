@@ -69,8 +69,25 @@ export const userSlice = createAppSlice({
                         | undefined
 
                     state.status = "error"
-                    state.errMsg = payload?.message ?? action.error.message
                     state.user = undefined
+
+                    // Other errors
+                    if (payload === undefined) {
+                        state.errMsg = action.error.message
+                        return
+                    }
+
+                    // ApiError
+                    switch (payload.message) {
+                        case "actionToken parsing failed":
+                            state.errMsg = "Invalid registration URL"
+                            break
+                        case "email already exists":
+                            state.errMsg = "User already registered"
+                            break
+                        default:
+                            state.errMsg = "Something went wrong"
+                    }
                 },
             }
         ),
@@ -119,7 +136,7 @@ export const userSlice = createAppSlice({
                         state.errMsg = "Invalid email or password"
                     } else {
                         state.status = "error"
-                        state.errMsg = payload?.message
+                        state.errMsg = "Something went wrong"
                     }
                 },
             }
