@@ -1,5 +1,6 @@
 import { useId } from "react"
 import { UseFormRegisterReturn } from "react-hook-form"
+import StatusMessage from "./StatusMessage"
 
 export default function FormDatalist({
     label,
@@ -8,6 +9,7 @@ export default function FormDatalist({
     register,
     warn,
     warningMsg,
+    hideMsg,
 }: {
     label?: string
     optionItems: { value: string; label: string; id: string }[]
@@ -15,6 +17,7 @@ export default function FormDatalist({
     register?: UseFormRegisterReturn<any>
     warn?: boolean
     warningMsg?: string
+    hideMsg?: boolean
 }) {
     const datalistID = useId()
 
@@ -41,8 +44,12 @@ export default function FormDatalist({
                     </option>
                 ))}
             </datalist>
-            {warningMsg !== undefined && (
-                <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
+            {!hideMsg && (
+                <StatusMessage
+                    msg={warningMsg}
+                    variant="error"
+                    className="text-xl"
+                />
             )}
         </div>
     )

@@ -1,7 +1,7 @@
 "use client"
 
 import { useForm, UseFormHandleSubmit } from "react-hook-form"
-import FormStringInput from "../../components/FormInput"
+import FormStringInput from "../../components/FormStringInput"
 import MyButton from "../../components/MyButton"
 import Link from "next/link"
 import * as z from "zod"
@@ -15,7 +15,7 @@ import {
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import PageLayout from "../../layout/PageLayout"
-import ResponseMessage from "../../components/ResponseMessage"
+import StatusMessage from "../../components/StatusMessage"
 
 export default function LoginPage() {
     // Store
@@ -61,16 +61,16 @@ function LoginForm() {
                 type="email"
                 required
                 register={register("email")}
-                warn={valErrors.email != undefined}
-                warningMsg={valErrors.email?.message ?? ""}
+                warn={valErrors.email !== undefined}
+                warningMsg={valErrors.email?.message}
             />
             <FormStringInput
                 label="Password"
                 type="password"
                 required
                 register={register("password")}
-                warn={valErrors.password != undefined}
-                warningMsg={valErrors.password?.message ?? ""}
+                warn={valErrors.password !== undefined}
+                warningMsg={valErrors.password?.message}
             />
             <ButtonSection
                 handleSubmit={handleSubmit}
@@ -107,14 +107,18 @@ function ButtonSection({
             <Link href="/forgot-password" className="w-fit mb-3 underline">
                 Forgot the password?
             </Link>
-            <ResponseMessage msg={userErrMsg} variant="error" />
+            <StatusMessage
+                msg={userErrMsg}
+                variant="error"
+                className="text-2xl"
+            />
             <div className="w-full mt-3 flex flex-col md:flex-row gap-5">
                 <MyButton
                     variant="positive"
                     type="submit"
-                    className="w-full md:w-44"
                     disabled={hasValidationErr || isSubmitting}
                     onClick={handleSubmit(submitHandler)}
+                    className="w-full md:w-44"
                 >
                     Login
                 </MyButton>

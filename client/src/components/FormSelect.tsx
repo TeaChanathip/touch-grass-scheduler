@@ -1,4 +1,5 @@
 import { UseFormRegisterReturn } from "react-hook-form"
+import StatusMessage from "./StatusMessage"
 
 export default function FormSelect({
     label,
@@ -15,8 +16,6 @@ export default function FormSelect({
     warn?: boolean
     warningMsg?: string
 }) {
-    // Create stable IDs based on label and value
-
     return (
         <div className="flex flex-col">
             {label && (
@@ -41,9 +40,11 @@ export default function FormSelect({
                     </option>
                 ))}
             </select>
-            {warningMsg !== undefined && (
-                <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
-            )}
+            <StatusMessage
+                msg={warningMsg}
+                variant="error"
+                className="text-xl"
+            />
         </div>
     )
 }

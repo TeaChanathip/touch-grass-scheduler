@@ -3,6 +3,7 @@
 import { VisibilityOffRounded, VisibilityRounded } from "@mui/icons-material"
 import { CSSProperties, useState } from "react"
 import { UseFormRegisterReturn } from "react-hook-form"
+import StatusMessage from "./StatusMessage"
 
 export default function FormStringInput({
     label,
@@ -12,6 +13,7 @@ export default function FormStringInput({
     register,
     warn,
     warningMsg,
+    hideMsg,
 }: {
     label?: string
     placeholder?: string
@@ -20,6 +22,7 @@ export default function FormStringInput({
     register?: UseFormRegisterReturn<any>
     warn?: boolean
     warningMsg?: string
+    hideMsg?: boolean
 }) {
     const [isShowPassword, setShowPassword] = useState(false)
 
@@ -29,7 +32,7 @@ export default function FormStringInput({
 
     const constructAdditionalStyle = () => {
         const style: CSSProperties = {}
-        if (warn) {
+        if (warn || warningMsg) {
             style.borderColor = "var(--color-prim-red)"
         }
         if (type === "password") {
@@ -75,8 +78,12 @@ export default function FormStringInput({
                     </span>
                 )}
             </span>
-            {warningMsg !== undefined && (
-                <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
+            {!hideMsg && (
+                <StatusMessage
+                    msg={warningMsg}
+                    variant="error"
+                    className="text-xl"
+                />
             )}
         </div>
     )

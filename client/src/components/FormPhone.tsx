@@ -1,7 +1,8 @@
 import { UseFormRegisterReturn } from "react-hook-form"
-import FormStringInput from "./FormInput"
+import FormStringInput from "./FormStringInput"
 import { countryCodesOptions } from "../constants/options"
 import FormDatalist from "./FormDatalist"
+import StatusMessage from "./StatusMessage"
 
 export default function FormPhone({
     required,
@@ -28,6 +29,7 @@ export default function FormPhone({
                         required
                         register={countryCodeRegister}
                         warn={warn}
+                        hideMsg
                     />
                 </span>
                 <span className="w-full">
@@ -36,12 +38,15 @@ export default function FormPhone({
                         required
                         register={phoneRegister}
                         warn={warn}
+                        hideMsg
                     />
                 </span>
             </span>
-            {warningMsg !== undefined && (
-                <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
-            )}
+            <StatusMessage
+                msg={warningMsg}
+                variant="error"
+                className="text-xl"
+            />
         </div>
     )
 }

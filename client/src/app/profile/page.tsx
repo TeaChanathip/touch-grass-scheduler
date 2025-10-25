@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { UserGender } from "../../interfaces/User.interface"
-import FormStringInput from "../../components/FormInput"
+import FormStringInput from "../../components/FormStringInput"
 import FormSelect from "../../components/FormSelect"
 import { genderOptions } from "../../constants/options"
 

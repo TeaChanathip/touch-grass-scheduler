@@ -1,4 +1,5 @@
 import { UseFormRegisterReturn } from "react-hook-form"
+import StatusMessage from "./StatusMessage"
 
 export default function FormRadioGroup({
     label,
@@ -51,9 +52,11 @@ export default function FormRadioGroup({
                     </span>
                 ))}
             </div>
-            {warningMsg !== undefined && (
-                <p className="self-center text-prim-red">{warningMsg}&nbsp;</p>
-            )}
+            <StatusMessage
+                msg={warningMsg}
+                variant="error"
+                className="text-xl"
+            />
         </div>
     )
 }

@@ -1,14 +1,14 @@
 "use client"
 
 import { useForm } from "react-hook-form"
-import FormStringInput from "../../../components/FormInput"
+import FormStringInput from "../../../components/FormStringInput"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import MyButton from "../../../components/MyButton"
 import { ApiService } from "../../../services/api.service"
 import { AuthService } from "../../../services/auth/auth.service"
 import { useRef, useState } from "react"
-import ResponseMessage from "../../../components/ResponseMessage"
+import StatusMessage from "../../../components/StatusMessage"
 
 export default function VerifyEmailPage() {
     const [responseMsg, setResponseMsg] = useState<
@@ -75,11 +75,14 @@ export default function VerifyEmailPage() {
                     label="Email Address"
                     required
                     register={register("email")}
+                    warn={valErrors.email !== undefined}
+                    warningMsg={valErrors.email?.message}
                 />
                 <div className="w-full flex flex-col items-center">
-                    <ResponseMessage
+                    <StatusMessage
                         msg={responseMsg?.msg}
                         variant={responseMsg?.variant ?? "info"}
+                        className="text-2xl"
                     />
                     <MyButton
                         variant="positive"
