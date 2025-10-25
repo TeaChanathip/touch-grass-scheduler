@@ -29,79 +29,26 @@ export default function Navbar() {
     // Store
     const dispatch = useAppDispatch()
     const userStatus = useAppSelector(selectUserStatus)
-    const user = useAppSelector(selectUser)
 
-    // Other hooks
-    const [isShow, setShow] = useState(false)
-    const pathname = usePathname()
+    // Hooks
     const router = useRouter()
+    const pathname = usePathname()
+    const [isSidebarShown, setSidebarShown] = useState(false)
 
-    useEffect(() => {
-        setShow(false)
-    }, [pathname])
-
-    // TODO: Migrate to use Reach Server Component?
+    // NOTE: Auto login (Maybe this should be put somewhere else)
     useEffect(() => {
         dispatch(userGetMe())
     }, [dispatch])
+
+    useEffect(() => {
+        setSidebarShown(false)
+    }, [pathname])
 
     useEffect(() => {
         if (userStatus === "unauthenticated") {
             router.push("/login")
         }
     }, [userStatus, router])
-
-    const routes: Path[] = [
-        { title: "Login", path: "/login", visiblility: "unauthenticated" },
-        { title: "RouteAll", path: "/all", visiblility: "all" },
-        {
-            title: "RouteUnauthenticated",
-            path: "/unauthenticated",
-            visiblility: "unauthenticated",
-        },
-        {
-            title: "RouteAuthenticated",
-            path: "/authenticated",
-            visiblility: "authenticated",
-        },
-        {
-            title: "RouteStudent",
-            path: "/student",
-            visiblility: UserRole.STUDENT,
-        },
-        {
-            title: "RouteTeacher",
-            path: "/teacher",
-            visiblility: UserRole.TEACHER,
-        },
-        {
-            title: "RouteGuardian",
-            path: "/guardian",
-            visiblility: UserRole.GUARDIAN,
-        },
-        { title: "RouteAdmin", path: "/admin", visiblility: UserRole.ADMIN },
-    ]
-
-    // Generate unique id to be used as key
-    const routeItems: NavItem[] = routes
-        .map((route) => {
-            return { ...route, id: `route-items-${route.title}` }
-        })
-        .filter((item) => {
-            if (item.path === pathname) return false
-
-            switch (item.visiblility) {
-                case "all":
-                    return true
-                case "unauthenticated":
-                    return userStatus != "authenticated"
-                case "authenticated":
-                    return userStatus === "authenticated"
-                default:
-                    if (userStatus !== "authenticated") return false
-                    return user?.role === item.visiblility
-            }
-        })
 
     return (
         <>
@@ -124,7 +71,7 @@ export default function Navbar() {
                 </Link>
                 <button
                     onClick={() => {
-                        setShow(!isShow)
+                        setSidebarShown(!isSidebarShown)
                     }}
                 >
                     <MenuRoundedIcon
@@ -133,26 +80,38 @@ export default function Navbar() {
                     />
                 </button>
             </header>
-            <NavPanel navItems={routeItems} isShow={isShow} user={user} />
+            <SideBar isSidebarShown={isSidebarShown} />
         </>
     )
 }
 
-function NavPanel({
-    navItems,
-    isShow,
-    user,
-}: {
-    navItems: NavItem[]
-    isShow: boolean
-    user?: User
-}) {
+function SideBar({ isSidebarShown }: { isSidebarShown: boolean }) {
+    // Store
+    const user = useAppSelector(selectUser)
+
+    return (
+        <aside
+            className="fixed h-full w-full lg:w-[500px] right-0 bg-prim-green-500/90 transition-all ease-in overflow-y-auto custom-scrollbar"
+            style={
+                isSidebarShown
+                    ? { transform: "none" }
+                    : { transform: "translateX(100%)" }
+            }
+        >
+            {user && <UserCard user={user} />}
+            <NavMenu />
+        </aside>
+    )
+}
+
+function UserCard({ user }: { user: User }) {
     // Store
     const dispatch = useAppDispatch()
 
-    // Other hooks
+    // Hooks
     const router = useRouter()
 
+    // Process the displayName to be proper for each screen size
     let displayName = ""
     if (user) {
         displayName = user.first_name
@@ -177,69 +136,121 @@ function NavPanel({
     }
 
     return (
-        <aside
-            className="fixed h-full w-full lg:w-[500px] right-0 bg-prim-green-500/90 transition-all ease-in overflow-y-auto custom-scrollbar"
-            style={
-                isShow
-                    ? { transform: "none" }
-                    : { transform: "translateX(100%)" }
+        <div className="mt-8 mx-8 px-4 py-3 flex flex-row items-center bg-prim-green-100 rounded-xl text-2xl drop-shadow-md">
+            <Image
+                src={user.avatar_url ?? "default_avartar.svg"}
+                alt="avartar"
+                width={120}
+                height={120}
+                className="size-[120px] rounded-full"
+            />
+            <div className="w-full flex flex-col gap-6">
+                <p className="w-full text-center text-xl">{displayName}</p>
+                <span className="w-full flex flex-wrap justify-center gap-2">
+                    <MyButton
+                        variant="positive"
+                        className="text-sm md:text-xl w-20 md:w-28"
+                        onClick={() => {
+                            editBtnHandler()
+                        }}
+                    >
+                        Edit
+                    </MyButton>
+                    <MyButton
+                        variant="negative"
+                        className="text-sm md:text-xl w-20 md:w-28"
+                        onClick={() => {
+                            logoutBtnHandler()
+                        }}
+                    >
+                        Logout
+                    </MyButton>
+                </span>
+            </div>
+        </div>
+    )
+}
+
+// All available routes
+const routes: Path[] = [
+    { title: "Login", path: "/login", visiblility: "unauthenticated" },
+    { title: "RouteAll", path: "/all", visiblility: "all" },
+    {
+        title: "RouteUnauthenticated",
+        path: "/unauthenticated",
+        visiblility: "unauthenticated",
+    },
+    {
+        title: "RouteAuthenticated",
+        path: "/authenticated",
+        visiblility: "authenticated",
+    },
+    {
+        title: "RouteStudent",
+        path: "/student",
+        visiblility: UserRole.STUDENT,
+    },
+    {
+        title: "RouteTeacher",
+        path: "/teacher",
+        visiblility: UserRole.TEACHER,
+    },
+    {
+        title: "RouteGuardian",
+        path: "/guardian",
+        visiblility: UserRole.GUARDIAN,
+    },
+    { title: "RouteAdmin", path: "/admin", visiblility: UserRole.ADMIN },
+]
+
+function NavMenu() {
+    // Hooks
+    const pathname = usePathname()
+    const userStatus = useAppSelector(selectUserStatus)
+    const user = useAppSelector(selectUser)
+
+    // Generate unique id to be used as key
+    // Filter routes based on the role of state of user
+    const routeItems: NavItem[] = routes
+        .map((route) => {
+            return { ...route, id: `route-items-${route.title}` }
+        })
+        .filter((item) => {
+            if (item.path === pathname) return false
+
+            switch (item.visiblility) {
+                case "all":
+                    return true
+                case "unauthenticated":
+                    return userStatus != "authenticated"
+                case "authenticated":
+                    return userStatus === "authenticated"
+                default:
+                    if (userStatus !== "authenticated") return false
+                    return user?.role === item.visiblility
             }
-        >
-            {user && (
-                <div className="mt-8 mx-8 px-4 py-3 flex flex-row items-center bg-prim-green-100 rounded-xl text-2xl drop-shadow-md">
-                    <Image
-                        src={user.avatar_url ?? "default_avartar.svg"}
-                        alt="avartar"
-                        width={120}
-                        height={120}
-                        className="size-[120px] rounded-full"
-                    />
-                    <div className="w-full flex flex-col gap-6">
-                        <p className="w-full text-center text-xl">
-                            {displayName}
-                        </p>
-                        <span className="w-full flex flex-wrap justify-center gap-2">
-                            <MyButton
-                                variant="positive"
-                                className="text-sm md:text-xl w-20 md:w-28"
-                                onClick={() => {
-                                    editBtnHandler()
-                                }}
-                            >
-                                Edit
-                            </MyButton>
-                            <MyButton
-                                variant="negative"
-                                className="text-sm md:text-xl w-20 md:w-28"
-                                onClick={() => {
-                                    logoutBtnHandler()
-                                }}
-                            >
-                                Logout
-                            </MyButton>
-                        </span>
-                    </div>
-                </div>
-            )}
-            <nav className="mt-4">
-                <ul className="mx-8 flex flex-col gap-4">
-                    {navItems.map((item) => (
-                        <li
-                            key={item.id}
-                            className="bg-prim-green-100 [&:hover,&:focus]:bg-prim-green-500 h-14 rounded-xl text-2xl drop-shadow-md"
+        })
+
+    return (
+        <nav className="mt-4">
+            <ul className="mx-8 flex flex-col gap-4">
+                {routeItems.map((item) => (
+                    <li
+                        key={item.id}
+                        className="bg-prim-green-100 [&:hover,&:focus]:bg-prim-green-500 h-14 rounded-xl text-2xl drop-shadow-md"
+                    >
+                        <Link
+                            href={item.path}
+                            className="size-full px-5 flex items-center"
                         >
-                            <Link
-                                href={item.path}
-                                className="size-full px-5 flex items-center"
-                            >
-                                {item.title}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        </aside>
+                            {item.title}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </nav>
     )
 }
 
 // TODO: Fix tabIndex of NavItem
+// TODO: Migrate to use React Server Component?

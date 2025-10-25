@@ -30,6 +30,7 @@ export default function useCountdown(
         if (intervalIdRef.current) {
             clearInterval(intervalIdRef.current)
         }
+        setCountdown(0)
     }
 
     return [countdown, startCountdown, stopCountdown]
