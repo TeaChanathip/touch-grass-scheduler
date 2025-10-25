@@ -80,12 +80,12 @@ export default function Navbar() {
                     />
                 </button>
             </header>
-            <SideBar isSidebarShown={isSidebarShown} />
+            <Sidebar isSidebarShown={isSidebarShown} />
         </>
     )
 }
 
-function SideBar({ isSidebarShown }: { isSidebarShown: boolean }) {
+function Sidebar({ isSidebarShown }: { isSidebarShown: boolean }) {
     // Store
     const user = useAppSelector(selectUser)
 
@@ -97,6 +97,7 @@ function SideBar({ isSidebarShown }: { isSidebarShown: boolean }) {
                     ? { transform: "none" }
                     : { transform: "translateX(100%)" }
             }
+            inert={!isSidebarShown}
         >
             {user && <UserCard user={user} />}
             <NavMenu />
@@ -251,6 +252,3 @@ function NavMenu() {
         </nav>
     )
 }
-
-// TODO: Fix tabIndex of NavItem
-// TODO: Migrate to use React Server Component?
