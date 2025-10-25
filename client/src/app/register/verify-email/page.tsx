@@ -1,37 +1,76 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, UseFormHandleSubmit } from "react-hook-form"
 import FormStringInput from "../../../components/FormStringInput"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import MyButton from "../../../components/MyButton"
 import { ApiService } from "../../../services/api.service"
 import { AuthService } from "../../../services/auth/auth.service"
-import { useRef, useState } from "react"
+import { useState } from "react"
 import StatusMessage from "../../../components/StatusMessage"
+import useCountdown from "../../../hooks/useCountdown"
+import PageLayout from "../../../layout/PageLayout"
 
 export default function VerifyEmailPage() {
-    const [responseMsg, setResponseMsg] = useState<
-        { msg: string; variant: "success" | "error" } | undefined
-    >(undefined)
+    return (
+        <PageLayout title="Verify Email">
+            <VerifyEmailForm />
+        </PageLayout>
+    )
+}
 
-    // Hooks for button countdown
-    const [countDown, setCountdown] = useState(0)
-    const intervalIdRef = useRef<ReturnType<typeof setInterval>>(undefined)
+// Form Schema
+const schema = z.object({
+    email: z.email("Invalid email"),
+})
 
-    const schema = z.object({
-        email: z.email("Invalid email"),
-    })
-
+function VerifyEmailForm() {
+    // Hooks
     const {
         register,
         handleSubmit,
         formState: { errors: valErrors, isSubmitting },
     } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
 
-    // Submit handler
+    return (
+        <form className="w-[70vw] max-w-96 flex flex-col gap-5">
+            <FormStringInput
+                type="email"
+                label="Email Address"
+                required
+                register={register("email")}
+                warn={valErrors.email !== undefined}
+                warningMsg={valErrors.email?.message}
+            />
+            <ButtonSection
+                handleSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
+                hasValidationErr={Object.keys(valErrors).length != 0}
+            />
+        </form>
+    )
+}
+
+function ButtonSection({
+    handleSubmit,
+    isSubmitting,
+    hasValidationErr,
+}: {
+    handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
+    isSubmitting: boolean
+    hasValidationErr: boolean
+}) {
+    // Hooks
+    const [countdown, startCountdown] = useCountdown(30)
+    const [responseMsg, setResponseMsg] = useState<
+        { msg: string; variant: "success" | "error" } | undefined
+    >(undefined)
+
+    // services
     const apiService = new ApiService()
     const authService = new AuthService(apiService)
+
     const submitHandler = async (formData: z.infer<typeof schema>) => {
         const result = schema.safeParse(formData)
 
@@ -42,21 +81,8 @@ export default function VerifyEmailPage() {
                 variant: "success",
             })
 
-            // Clear existing interval
-            if (intervalIdRef.current) {
-                clearInterval(intervalIdRef.current)
-            }
-
-            setCountdown(30)
-            intervalIdRef.current = setInterval(() => {
-                setCountdown((currentCountDown) => {
-                    if (currentCountDown <= 1) {
-                        clearInterval(intervalIdRef.current)
-                        return 0
-                    }
-                    return currentCountDown - 1
-                })
-            }, 1000)
+            // Prevent user from spaming requests
+            startCountdown()
         } catch (err) {
             if (err instanceof Error)
                 setResponseMsg({ msg: err.message, variant: "error" })
@@ -64,40 +90,21 @@ export default function VerifyEmailPage() {
     }
 
     return (
-        <div className="flex flex-col gap-10 items-center pt-10">
-            <h1 className="text-5xl">Verfiy Email</h1>
-            <form
-                onSubmit={handleSubmit(submitHandler)}
-                className="w-[70vw] max-w-96 flex flex-col gap-5"
+        <section className="w-full flex flex-col items-center">
+            <StatusMessage
+                msg={responseMsg?.msg}
+                variant={responseMsg?.variant ?? "info"}
+                className="text-2xl"
+            />
+            <MyButton
+                variant="positive"
+                type="submit"
+                disabled={hasValidationErr || isSubmitting || countdown !== 0}
+                onClick={handleSubmit(submitHandler)}
+                className="w-full md:w-44"
             >
-                <FormStringInput
-                    type="email"
-                    label="Email Address"
-                    required
-                    register={register("email")}
-                    warn={valErrors.email !== undefined}
-                    warningMsg={valErrors.email?.message}
-                />
-                <div className="w-full flex flex-col items-center">
-                    <StatusMessage
-                        msg={responseMsg?.msg}
-                        variant={responseMsg?.variant ?? "info"}
-                        className="text-2xl"
-                    />
-                    <MyButton
-                        variant="positive"
-                        type="submit"
-                        disabled={
-                            Object.keys(valErrors).length > 0 ||
-                            isSubmitting ||
-                            countDown !== 0
-                        }
-                        className="w-full md:w-44"
-                    >
-                        Send{countDown !== 0 && ` (${countDown})`}
-                    </MyButton>
-                </div>
-            </form>
-        </div>
+                Send{countdown !== 0 && ` (${countdown})`}
+            </MyButton>
+        </section>
     )
 }
