@@ -10,22 +10,13 @@ import { AuthService } from "../../../services/auth/auth.service"
 import { useState } from "react"
 import StatusMessage from "../../../components/StatusMessage"
 import useCountdown from "../../../hooks/useCountdown"
-import PageLayout from "../../../layout/PageLayout"
-
-export default function VerifyEmailPage() {
-    return (
-        <PageLayout title="Verify Email">
-            <VerifyEmailForm />
-        </PageLayout>
-    )
-}
 
 // Form Schema
 const schema = z.object({
     email: z.email("Invalid email"),
 })
 
-function VerifyEmailForm() {
+export default function VerifyEmailForm() {
     // Hooks
     const {
         register,

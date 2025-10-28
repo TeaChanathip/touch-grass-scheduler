@@ -23,7 +23,6 @@ import parsePhoneNumberFromString, {
 } from "libphonenumber-js"
 import { CountryCodeSchema } from "../../../schemas/CountryCodeSchema"
 import { genderOptions, roleOptions } from "../../../constants/options"
-import PageLayout from "../../../layout/PageLayout"
 import StatusMessage from "../../../components/StatusMessage"
 
 export default function RegisterPage() {
@@ -39,11 +38,7 @@ export default function RegisterPage() {
         }
     }, [userStatus, router])
 
-    return (
-        <PageLayout title="Register">
-            <RegisterForm />
-        </PageLayout>
-    )
+    return <RegisterForm />
 }
 
 // Form Schema
@@ -127,7 +122,7 @@ function RegisterForm() {
 
     return (
         <form className="w-4/5 lg:w-1/3 flex flex-col gap-3 mb-5">
-            <span className="flex flex-row gap-4">
+            <span className="w-full flex flex-row gap-4 justify-between">
                 <FormStringInput
                     label="Frist Name"
                     type="text"
@@ -144,7 +139,7 @@ function RegisterForm() {
                     warningMsg={valErrors.middle_name?.message}
                 />
             </span>
-            <span className="flex flex-row gap-4 justify-between">
+            <span className="w-full flex flex-row gap-4 justify-between">
                 <FormStringInput
                     label="Last Name"
                     type="text"

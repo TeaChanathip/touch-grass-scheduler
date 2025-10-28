@@ -14,7 +14,6 @@ import {
 } from "../../store/features/user/userSlice"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import PageLayout from "../../layout/PageLayout"
 import StatusMessage from "../../components/StatusMessage"
 
 export default function LoginPage() {
@@ -30,11 +29,7 @@ export default function LoginPage() {
         }
     }, [userStatus, router])
 
-    return (
-        <PageLayout title="Login">
-            <LoginForm />
-        </PageLayout>
-    )
+    return <LoginForm />
 }
 
 // Form Schema

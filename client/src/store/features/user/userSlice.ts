@@ -176,7 +176,7 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
-        userGetMe: create.asyncThunk(
+        userAutoLogin: create.asyncThunk(
             async (_, { rejectWithValue }) => {
                 try {
                     const { user } = await usersService.getMe()
@@ -217,7 +217,7 @@ export const userSlice = createAppSlice({
 
                     // ApiError
                     if (payload?.status === 401) {
-                        state.status = "idle"
+                        state.status = "unauthenticated"
                         state.errMsg = undefined
                     } else {
                         state.status = "error"
@@ -235,7 +235,7 @@ export const userSlice = createAppSlice({
 })
 
 // Actions
-export const { userLogin, userRegister, userLogout, userGetMe } =
+export const { userLogin, userRegister, userLogout, userAutoLogin } =
     userSlice.actions
 
 // Selectors
