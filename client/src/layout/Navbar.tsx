@@ -3,16 +3,16 @@
 import Image from "next/image"
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded"
 import Link from "next/link"
-import React, { useEffect, useState } from "react"
+import React, { memo, useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
 import {
-    userGetMe,
+    userAutoLogin,
     userLogout,
     selectUser,
     selectUserStatus,
 } from "../store/features/user/userSlice"
-import { User, UserRole } from "../interfaces/User.interface"
+import { UserRole } from "../interfaces/User.interface"
 import MyButton from "../components/MyButton"
 
 interface Path {
@@ -28,47 +28,23 @@ interface NavItem extends Path {
 export default function Navbar() {
     // Store
     const dispatch = useAppDispatch()
-    const userStatus = useAppSelector(selectUserStatus)
 
     // Hooks
-    const router = useRouter()
     const pathname = usePathname()
     const [isSidebarShown, setSidebarShown] = useState(false)
 
-    // NOTE: Auto login (Maybe this should be put somewhere else)
     useEffect(() => {
-        dispatch(userGetMe())
+        dispatch(userAutoLogin())
     }, [dispatch])
 
     useEffect(() => {
         setSidebarShown(false)
     }, [pathname])
 
-    useEffect(() => {
-        if (userStatus === "unauthenticated") {
-            router.push("/login")
-        }
-    }, [userStatus, router])
-
     return (
         <>
             <header className="sticky top-0 h-14 bg-prim-green-800 flex items-center justify-between px-2.5">
-                <Link href="/">
-                    <Image
-                        src="icon.svg"
-                        alt="icon"
-                        width={40}
-                        height={40}
-                        className="inline mr-2"
-                    />
-                    <Image
-                        src="text_icon_light.svg"
-                        alt="text-icon"
-                        width={90}
-                        height={40}
-                        className="inline size-auto"
-                    />
-                </Link>
+                <AppIcon />
                 <button
                     onClick={() => {
                         setSidebarShown(!isSidebarShown)
@@ -85,55 +61,66 @@ export default function Navbar() {
     )
 }
 
-function Sidebar({ isSidebarShown }: { isSidebarShown: boolean }) {
-    // Store
-    const user = useAppSelector(selectUser)
+const AppIcon = memo(function AppIcon() {
+    return (
+        <Link href="/">
+            <Image
+                src="icon.svg"
+                alt="icon"
+                width={40}
+                height={40}
+                className="inline mr-2"
+            />
+            <Image
+                src="text_icon_light.svg"
+                alt="text-icon"
+                width={90}
+                height={40}
+                className="inline size-auto"
+            />
+        </Link>
+    )
+})
 
+const Sidebar = memo(function Sidebar({
+    isSidebarShown,
+}: {
+    isSidebarShown: boolean
+}) {
     return (
         <aside
+            inert={!isSidebarShown}
             className="fixed h-full w-full lg:w-[500px] right-0 bg-prim-green-500/90 transition-all ease-in overflow-y-auto custom-scrollbar"
             style={
                 isSidebarShown
                     ? { transform: "none" }
                     : { transform: "translateX(100%)" }
             }
-            inert={!isSidebarShown}
         >
-            {user && <UserCard user={user} />}
+            <UserCard />
             <NavMenu />
         </aside>
     )
-}
+})
 
-function UserCard({ user }: { user: User }) {
+const UserCard = memo(function UserCard() {
     // Store
     const dispatch = useAppDispatch()
+    const user = useAppSelector(selectUser)
 
     // Hooks
     const router = useRouter()
-
-    // Process the displayName to be proper for each screen size
-    let displayName = ""
-    if (user) {
-        displayName = user.first_name
-        if (user.middle_name) displayName += " " + user.middle_name
-        if (user.last_name) displayName += " " + user.last_name
-
-        const { innerWidth } = window
-        if (innerWidth < 768 && displayName.length > 16) {
-            displayName = displayName.slice(0, 16).trim() + "..."
-        } else if (innerWidth >= 768 && displayName.length > 40) {
-            displayName = displayName.slice(0, 40).trim() + "..."
-        }
-    }
 
     // Button Handlers
     const editBtnHandler = () => {
         router.push("/profile")
     }
-
     const logoutBtnHandler = () => {
         dispatch(userLogout())
+    }
+
+    if (user === undefined) {
+        return null
     }
 
     return (
@@ -145,8 +132,10 @@ function UserCard({ user }: { user: User }) {
                 height={120}
                 className="size-[120px] rounded-full"
             />
-            <div className="w-full flex flex-col gap-6">
-                <p className="w-full text-center text-xl">{displayName}</p>
+            <div className="w-full flex flex-col gap-6 overflow-hidden">
+                <p className="w-full text-center text-xl whitespace-nowrap overflow-hidden text-ellipsis">
+                    {user.first_name} {user.middle_name} {user.last_name}
+                </p>
                 <span className="w-full flex flex-wrap justify-center gap-2">
                     <MyButton
                         variant="positive"
@@ -170,7 +159,7 @@ function UserCard({ user }: { user: User }) {
             </div>
         </div>
     )
-}
+})
 
 // All available routes
 const routes: Path[] = [
@@ -204,7 +193,7 @@ const routes: Path[] = [
     { title: "RouteAdmin", path: "/admin", visiblility: UserRole.ADMIN },
 ]
 
-function NavMenu() {
+const NavMenu = memo(function NavMenu() {
     // Hooks
     const pathname = usePathname()
     const userStatus = useAppSelector(selectUserStatus)
@@ -251,4 +240,4 @@ function NavMenu() {
             </ul>
         </nav>
     )
-}
+})
