@@ -38,8 +38,6 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 		return "", "", errors.New("missing accessToken")
 	}
 
-	m.Logger.Debug(accessTokenString)
-
 	accessToken, err := common.ParseJWTToken(accessTokenString, m.AppConfig.JWTSecret)
 	if err != nil {
 		return "", "", errors.New("invalid accessToken")

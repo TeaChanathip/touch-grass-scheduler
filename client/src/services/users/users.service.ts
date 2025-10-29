@@ -1,4 +1,4 @@
-import { User } from "../../interfaces/User.interface"
+import { UpdateUserPayload, User } from "../../interfaces/User.interface"
 import { ApiService } from "../api.service"
 
 export class UsersService {
@@ -8,5 +8,14 @@ export class UsersService {
 
     async getMe(): Promise<{ user: User }> {
         return await this.apiService.get<{ user: User }>(`${this.url}/me`)
+    }
+
+    async updateUser(
+        updateUserPayload: UpdateUserPayload
+    ): Promise<{ user: User }> {
+        return await this.apiService.put<UpdateUserPayload, { user: User }>(
+            this.url,
+            updateUserPayload
+        )
     }
 }

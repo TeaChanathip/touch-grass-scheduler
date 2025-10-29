@@ -49,7 +49,7 @@ type RegisterBody struct {
 	Phone      string           `json:"phone" binding:"required,e164"`
 	Gender     types.UserGender `json:"gender" binding:"required,oneof=''male' 'female' 'other' 'prefer_not_to_say'"`
 	Password   string           `json:"password" binding:"required,min=8,max=64"`
-	SchoolNum  string           `json:"school_num" binding:"omitempty,number,max=16"` // Be either student_num or teacher_num
+	SchoolNum  *string          `json:"school_num" binding:"omitempty,number,max=16"` // Be either student_num or teacher_num
 }
 
 func (rb RegisterBody) ToUserModel() *models.User {
@@ -192,11 +192,11 @@ func validateSchoolNum(registerBody *RegisterBody) error {
 
 	isSchoolPersonnel := slices.Contains(schoolPersonnelRoles, registerBody.Role)
 
-	if isSchoolPersonnel && registerBody.SchoolNum == "" {
+	if isSchoolPersonnel && registerBody.SchoolNum == nil {
 		return fmt.Errorf("%s must provide school_num", registerBody.Role)
 	}
 
-	if !isSchoolPersonnel && registerBody.SchoolNum != "" {
+	if !isSchoolPersonnel && registerBody.SchoolNum != nil {
 		return fmt.Errorf("%s should not provide school_num", registerBody.Role)
 	}
 

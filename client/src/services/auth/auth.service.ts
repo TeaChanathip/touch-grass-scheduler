@@ -1,5 +1,4 @@
-import { LoginPayload } from "../../interfaces/LoginPayload.interface"
-import { RegisterPayload } from "../../interfaces/RegisterPayload.interface"
+import { LoginPayload, RegisterPayload } from "../../interfaces/Auth.interface"
 import { User } from "../../interfaces/User.interface"
 import { ApiService } from "../api.service"
 

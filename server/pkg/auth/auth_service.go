@@ -70,6 +70,10 @@ func (service *AuthService) GetRegistrationMail(email string) error {
 			return err
 		}
 
+		// WARN: This is only for testing
+		service.Logger.Debug("Temporary", zap.String("registrationToken", registrationToken))
+		return nil
+
 		err = service.MailService.SendRegistrationVerification(email, registrationToken)
 		if err != nil {
 			return err

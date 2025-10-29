@@ -11,25 +11,28 @@ import (
 
 type UsersRoutesParams struct {
 	fx.In
-	Logger          *zap.Logger
-	Router          *gin.Engine
-	AuthMiddleware  *middlewarefx.AuthMiddleware
-	UsersController *UsersController
+	Logger               *zap.Logger
+	Router               *gin.Engine
+	AuthMiddleware       *middlewarefx.AuthMiddleware
+	UsersController      *UsersController
+	RequestBodyValidator *middlewarefx.RequestBodyValidator
 }
 
 type UsersRoutes struct {
-	Logger          *zap.Logger
-	Router          *gin.Engine
-	UsersController *UsersController
-	AuthMiddleware  *middlewarefx.AuthMiddleware
+	Logger               *zap.Logger
+	Router               *gin.Engine
+	UsersController      *UsersController
+	AuthMiddleware       *middlewarefx.AuthMiddleware
+	RequestBodyValidator *middlewarefx.RequestBodyValidator
 }
 
 func NewUsersRoutes(params UsersRoutesParams) *UsersRoutes {
 	return &UsersRoutes{
-		Logger:          params.Logger,
-		Router:          params.Router,
-		UsersController: params.UsersController,
-		AuthMiddleware:  params.AuthMiddleware,
+		Logger:               params.Logger,
+		Router:               params.Router,
+		UsersController:      params.UsersController,
+		AuthMiddleware:       params.AuthMiddleware,
+		RequestBodyValidator: params.RequestBodyValidator,
 	}
 }
 
@@ -44,6 +47,18 @@ func (routes *UsersRoutes) Setup() {
 		routes.AuthMiddleware.HandlerWithRole(types.UserRoleAdmin),
 		routes.UsersController.GetUserByID)
 
-	// usersGroup.PUT("users/:id")
+	routes.Router.PUT(string(endpoints.UpdateUserV1),
+		routes.AuthMiddleware.HandlerWithRole(types.UserRoleStudent,
+			types.UserRoleTeacher,
+			types.UserRoleGuardian),
+		routes.RequestBodyValidator.Handler("update-user", UpdateUserBody{}),
+		routes.UsersController.UpdateUser)
+
+	routes.Router.GET(string(endpoints.GetAvartarSignedURL),
+		routes.AuthMiddleware.HandlerWithRole(types.UserRoleStudent,
+			types.UserRoleTeacher,
+			types.UserRoleGuardian),
+	)
+
 	// usersGroup.DELETE("users/:id")
 }

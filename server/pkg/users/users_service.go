@@ -27,6 +27,7 @@ type UserServiceInterface interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id uuid.UUID) (*models.User, error)
+	UpdateUserByID(id uuid.UUID, body *UpdateUserBody) (*models.User, error)
 }
 
 // Verify interface implementation at compile time
@@ -74,7 +75,7 @@ func (service *UserService) CreateUser(user *models.User) error {
 }
 
 func (service *UserService) GetUserByEmail(email string) (*models.User, error) {
-	var user models.User
+	var user *models.User
 
 	// Query user by email
 	result := service.DB.Where("email = ?", email).First(&user)
@@ -92,16 +93,17 @@ func (service *UserService) GetUserByEmail(email string) (*models.User, error) {
 		return nil, common.ErrDatabase
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 func (service *UserService) GetUserByID(id uuid.UUID) (*models.User, error) {
-	var user models.User
+	var user *models.User
 
 	result := service.DB.First(&user, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// User not found service.Logger.Debug("User not found", zap.String("id", id))
+		// User not found
+		service.Logger.Debug("User not found", zap.String("id", id.String()))
 		return nil, common.ErrUserNotFound
 	} else if result.Error != nil {
 		// Other errors
@@ -112,5 +114,58 @@ func (service *UserService) GetUserByID(id uuid.UUID) (*models.User, error) {
 		return nil, common.ErrDatabase
 	}
 
-	return &user, nil
+	return user, nil
+}
+
+func (service *UserService) UpdateUserByID(id uuid.UUID, body *UpdateUserBody) (*models.User, error) {
+	var updatedUser *models.User
+
+	// NOTE: Gorm doen't support update and return in one operation
+	// Utilize transaction for atomicity
+	err := service.DB.Transaction(
+		func(tx *gorm.DB) error {
+			// Operation1: Perform update
+			result := tx.Model(&models.User{}).
+				Where("id = ?", id).
+				Updates(&body)
+
+			if result.Error != nil {
+				service.Logger.Error("Database error while updating user",
+					zap.String("id", id.String()),
+					zap.Error(result.Error),
+				)
+				return common.ErrDatabase
+			}
+
+			// No row affected (no user found)
+			if result.RowsAffected == 0 {
+				service.Logger.Debug("User not found for update", zap.String("id", id.String()))
+				return common.ErrUserNotFound
+			}
+
+			// Operation2: Get updated user
+			err := tx.First(&updatedUser, "id = ?", id).Error
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					service.Logger.Error("Updated user but could not fetch it (race condition?)",
+						zap.String("id", id.String()),
+					)
+					return common.ErrUserNotFound
+				}
+
+				service.Logger.Error("Database error while fetching updated user",
+					zap.String("id", id.String()),
+					zap.Error(err),
+				)
+				// Return error to trigger a rollback
+				return common.ErrDatabase
+			}
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
 }

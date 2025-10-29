@@ -1,6 +1,8 @@
-import { LoginPayload } from "../../../interfaces/LoginPayload.interface"
-import { RegisterPayload } from "../../../interfaces/RegisterPayload.interface"
-import { User } from "../../../interfaces/User.interface"
+import {
+    LoginPayload,
+    RegisterPayload,
+} from "../../../interfaces/Auth.interface"
+import { UpdateUserPayload, User } from "../../../interfaces/User.interface"
 import {
     ApiErrorResponse,
     ApiService,
@@ -167,7 +169,7 @@ export const userSlice = createAppSlice({
                 },
                 rejected: (state, action) => {
                     const payload = action.payload as
-                        | { status?: number; message?: string }
+                        | ApiErrorResponse
                         | undefined
 
                     state.status = "error"
@@ -203,7 +205,7 @@ export const userSlice = createAppSlice({
                 },
                 rejected: (state, action) => {
                     const payload = action.payload as
-                        | { status?: number; message?: string }
+                        | ApiErrorResponse
                         | undefined
 
                     state.user = undefined
@@ -226,6 +228,52 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
+        userUpdateProfile: create.asyncThunk(
+            async (
+                updateUserPayload: UpdateUserPayload,
+                { rejectWithValue }
+            ) => {
+                try {
+                    const { user } =
+                        await usersService.updateUser(updateUserPayload)
+                    return user
+                } catch (err) {
+                    if (isApiError(err)) {
+                        return rejectWithValue({
+                            status: err.status,
+                            message: err.message,
+                        })
+                    }
+                    throw err
+                }
+            },
+            {
+                pending: (state) => {
+                    state.status = "loading"
+                },
+                fulfilled: (state, action) => {
+                    state.status = "authenticated"
+                    state.user = action.payload
+                    state.errMsg = undefined
+                },
+                rejected: (state, action) => {
+                    const payload = action.payload as
+                        | ApiErrorResponse
+                        | undefined
+
+                    state.status = "authenticated"
+
+                    // Other errors
+                    if (payload === undefined) {
+                        state.errMsg = action.error.message
+                        return
+                    }
+
+                    // ApiError
+                    state.errMsg = payload.message
+                },
+            }
+        ),
     }),
     selectors: {
         selectUser: (state) => state.user,
@@ -235,8 +283,13 @@ export const userSlice = createAppSlice({
 })
 
 // Actions
-export const { userLogin, userRegister, userLogout, userAutoLogin } =
-    userSlice.actions
+export const {
+    userLogin,
+    userRegister,
+    userLogout,
+    userAutoLogin,
+    userUpdateProfile,
+} = userSlice.actions
 
 // Selectors
 export const { selectUser, selectUserStatus, selectUserErrMsg } =

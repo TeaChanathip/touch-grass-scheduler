@@ -17,7 +17,7 @@ import {
 } from "../../../store/features/user/userSlice"
 import { useParams, useRouter } from "next/navigation"
 import { userRegister } from "../../../store/features/user/userSlice"
-import { RegisterPayload } from "../../../interfaces/RegisterPayload.interface"
+import { RegisterPayload } from "../../../interfaces/Auth.interface"
 import parsePhoneNumberFromString, {
     isValidPhoneNumber,
 } from "libphonenumber-js"
@@ -105,6 +105,7 @@ function RegisterForm() {
         if (![UserRole.STUDENT, UserRole.TEACHER].includes(currentRole)) {
             setValue("school_num", undefined)
         }
+        trigger("school_num")
     }, [setValue, currentRole])
 
     // Trigger confirm_password validation when password is changed
@@ -242,7 +243,9 @@ function ButtonSection({
             )!.format("E.164"),
             gender: result.data.gender,
             password: result.data.password,
-            school_num: result.data.school_num,
+            ...(result.data.school_num && {
+                school_num: result.data.school_num,
+            }),
         }
 
         dispatch(

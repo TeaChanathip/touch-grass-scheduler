@@ -9,17 +9,17 @@ type User struct {
 	ID         uuid.UUID        `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	Role       types.UserRole   `gCustomClaimsExampleorm:"type:role;not null" json:"role"`
 	FirstName  string           `gorm:"type:varchar(128);not null" json:"first_name"`
-	MiddleName string           `gorm:"type:varchar(128)" json:"middle_name"`
-	LastName   string           `gorm:"type:varchar(128)" json:"last_name"`
+	MiddleName string           `gorm:"type:varchar(128);null;default:null" json:"middle_name"`
+	LastName   string           `gorm:"type:varchar(128);null;default:null" json:"last_name"`
 	Phone      string           `gorm:"type:varchar(15);not null" json:"phone"`
 	Gender     types.UserGender `gorm:"type:gender;not null" json:"gender"`
 	Email      string           `gorm:"type:varchar(255);not null;unique" json:"email"`
 	Password   string           `gorm:"type:varchar(60);not null" json:"password"`
-	AvatarUrl  string           `gorm:"type:varchar(512)" json:"avartar_url"`
-	SchoolNum  string           `gorm:"type:varchar(16)" json:"school_num"`
+	AvatarURL  *string          `gorm:"type:varchar(512);null;default:null" json:"avartar_url"`
+	SchoolNum  *string          `gorm:"type:varchar(16);null;default:null" json:"school_num"`
 }
 
-// Remove sensitive fields e.g. password
+// PublicUser Remove sensitive fields e.g. password
 type PublicUser struct {
 	ID         uuid.UUID        `json:"id"`
 	Role       types.UserRole   `json:"role"`
@@ -29,8 +29,8 @@ type PublicUser struct {
 	Phone      string           `json:"phone"`
 	Gender     types.UserGender `json:"gender"`
 	Email      string           `json:"email"`
-	AvatarUrl  string           `json:"avartar_url"`
-	SchoolNum  string           `json:"school_num"`
+	AvatarURL  *string          `json:"avartar_url"`
+	SchoolNum  *string          `json:"school_num"`
 }
 
 func (u *User) ToPublic() *PublicUser {
@@ -43,7 +43,7 @@ func (u *User) ToPublic() *PublicUser {
 		Phone:      u.Phone,
 		Gender:     u.Gender,
 		Email:      u.Email,
-		AvatarUrl:  u.AvatarUrl,
+		AvatarURL:  u.AvatarURL,
 		SchoolNum:  u.SchoolNum,
 	}
 }

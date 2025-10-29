@@ -26,3 +26,11 @@ export interface User {
     avatar_url?: string
     school_num?: string
 }
+
+export interface UpdateUserPayload {
+    first_name?: string
+    middle_name?: string
+    last_name?: string
+    gender?: UserGender
+    phone?: string
+}

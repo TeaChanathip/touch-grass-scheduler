@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS "users" (
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "role" role NOT NULL,
     "first_name" VARCHAR(128) NOT NULL,
-    "middle_name" VARCHAR (128) DEFAULT NULL,
-    "last_name" VARCHAR(128) DEFAULT NULL,
+    "middle_name" VARCHAR (128) DEFAULT '',
+    "last_name" VARCHAR(128) DEFAULT '',
     "phone" VARCHAR(15) NOT NULL, -- e164
     "gender" gender NOT NULL,
     "email" VARCHAR(255) NOT NULL,

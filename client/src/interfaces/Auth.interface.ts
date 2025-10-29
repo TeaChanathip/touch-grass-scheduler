@@ -1,5 +1,10 @@
 import { UserGender, UserRole } from "./User.interface"
 
+export interface LoginPayload {
+    email: string
+    password: string
+}
+
 export interface RegisterPayload {
     role: UserRole
     first_name: string

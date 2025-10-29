@@ -1,8 +1,12 @@
 "use client"
 
-import { useForm, UseFormHandleSubmit } from "react-hook-form"
-import { selectUser } from "../../store/features/user/userSlice"
-import { useAppSelector } from "../../store/hooks"
+import { useForm, UseFormHandleSubmit, UseFormReset } from "react-hook-form"
+import {
+    selectUser,
+    selectUserErrMsg,
+    userUpdateProfile,
+} from "../../store/features/user/userSlice"
+import { useAppDispatch, useAppSelector } from "../../store/hooks"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { User, UserGender } from "../../interfaces/User.interface"
@@ -51,7 +55,6 @@ const schema = z.object({
     }),
     country_code: CountryCodeSchema,
     phone: z.string().regex(/^\d{7,15}$/),
-    avartar_url: z.url().optional(),
 })
 
 function UserProfileForm() {
@@ -64,19 +67,18 @@ function UserProfileForm() {
     const {
         register,
         handleSubmit,
-        formState: { errors: valErrors, isSubmitting },
+        formState: { errors: valErrors, isSubmitting, isDirty, dirtyFields },
         reset,
     } = useForm({
         resolver: zodResolver(schema),
         mode: "onChange",
         defaultValues: {
             first_name: user.first_name,
-            middle_name: user.middle_name,
-            last_name: user.last_name,
+            middle_name: user.middle_name ?? "",
+            last_name: user.last_name ?? "",
             gender: user.gender,
             country_code: phoneNumber.country,
             phone: phoneNumber.nationalNumber,
-            avartar_url: user.avatar_url,
         },
     })
 
@@ -132,6 +134,9 @@ function UserProfileForm() {
                 handleSubmit={handleSubmit}
                 isSubmitting={isSubmitting}
                 hasValidationErr={Object.keys(valErrors).length !== 0}
+                isDirty={isDirty}
+                dirtyFields={dirtyFields}
+                reset={reset}
             />
         </form>
     )
@@ -141,21 +146,72 @@ function ButtonSection({
     handleSubmit,
     isSubmitting,
     hasValidationErr,
+    isDirty,
+    dirtyFields,
+    reset,
 }: {
     handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
     isSubmitting: boolean
     hasValidationErr: boolean
+    isDirty: boolean
+    dirtyFields: Partial<
+        Readonly<{
+            first_name?: boolean
+            middle_name?: boolean
+            last_name?: boolean
+            gender?: boolean
+            country_code?: boolean
+            phone?: boolean
+        }>
+    >
+    reset: UseFormReset<z.infer<typeof schema>>
 }) {
-    const submitHandler = () => {}
+    // Store
+    const dispatch = useAppDispatch()
+    const userErrMsg = useAppSelector(selectUserErrMsg)
+
+    const submitHandler = async (formData: z.infer<typeof schema>) => {
+        const result = schema.safeParse(formData)
+
+        if (result.error) return
+
+        // update only dirty fields
+        await dispatch(
+            userUpdateProfile({
+                ...(dirtyFields.first_name && {
+                    first_name: result.data.first_name,
+                }),
+                ...(dirtyFields.middle_name && {
+                    middle_name: result.data.middle_name,
+                }),
+                ...(dirtyFields.last_name && {
+                    last_name: result.data.last_name,
+                }),
+                ...(dirtyFields.gender && {
+                    gender: result.data.gender,
+                }),
+                ...((dirtyFields.country_code || dirtyFields.phone) && {
+                    phone: parsePhoneNumberFromString(
+                        result.data.phone,
+                        result.data.country_code
+                    )!.format("E.164"),
+                }),
+            })
+        )
+    }
 
     return (
         <section className="flex flex-col items-center">
-            <StatusMessage msg={"test"} variant="error" className="text-2xl" />
+            <StatusMessage
+                msg={userErrMsg}
+                variant="error"
+                className="text-2xl"
+            />
             <div className="w-full mt-3 flex flex-col md:flex-row gap-5">
                 <MyButton
                     variant="positive"
                     type="submit"
-                    disabled={hasValidationErr || isSubmitting}
+                    disabled={!isDirty || hasValidationErr || isSubmitting}
                     onClick={handleSubmit(submitHandler)}
                     className="w-full md:w-44"
                 >
@@ -164,6 +220,7 @@ function ButtonSection({
                 <MyButton
                     variant="negative"
                     type="button"
+                    onClick={() => reset()}
                     className="w-full md:w-44"
                 >
                     Reset
@@ -172,3 +229,6 @@ function ButtonSection({
         </section>
     )
 }
+
+// TODO: Complete image uploader
+// TODO: Update the logic for showing response message (must include the error from uploading an image)
