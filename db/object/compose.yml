@@ -2,6 +2,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minio
+    restart: always
 
     # This tells MinIO to serve data from the /data directory
     # and to host the web console on port 9001.
