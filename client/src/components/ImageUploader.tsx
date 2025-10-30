@@ -5,10 +5,13 @@ interface ImageUploader extends ButtonHTMLAttributes<HTMLButtonElement> {
     src?: string
     fallBackSrc: string
     alt?: string
+    width: number
+    height: number
 }
 
 export default function ImageUploader(props: ImageUploader) {
-    const { src, fallBackSrc, alt, className, ...restProps } = props
+    const { src, fallBackSrc, alt, width, height, className, ...restProps } =
+        props
 
     // Hooks
     const inputRef = useRef<HTMLInputElement | null>(null)
@@ -27,7 +30,8 @@ export default function ImageUploader(props: ImageUploader) {
         <button
             type="button"
             onClick={btnHandler}
-            className={`relative cursor-pointer hover:brightness-50 ${className}`}
+            {...restProps}
+            className={`cursor-pointer disabled:pointer-events-none ${className}`}
         >
             <input
                 type="file"
@@ -36,7 +40,12 @@ export default function ImageUploader(props: ImageUploader) {
                 onChange={inputChangeHandler}
                 className="hidden"
             />
-            <Image src={src ?? fallBackSrc} alt={alt ?? "upload image"} fill />
+            <Image
+                src={src ?? fallBackSrc}
+                alt={alt ?? "upload image"}
+                width={width}
+                height={height}
+            />
         </button>
     )
 }

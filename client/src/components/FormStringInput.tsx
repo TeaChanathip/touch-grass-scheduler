@@ -1,29 +1,32 @@
 "use client"
 
 import { VisibilityOffRounded, VisibilityRounded } from "@mui/icons-material"
-import { CSSProperties, useState } from "react"
+import { CSSProperties, InputHTMLAttributes, useState } from "react"
 import { UseFormRegisterReturn } from "react-hook-form"
 import StatusMessage from "./StatusMessage"
+
+interface FormStringInputProps extends InputHTMLAttributes<HTMLInputElement> {
+    label?: string
+    type: "number" | "text" | "email" | "password" | "tel" | "search" | "url" // Overwrite
+    register?: UseFormRegisterReturn<any>
+    warn?: boolean
+    warningMsg?: string
+    hideMsg?: boolean
+}
 
 export default function FormStringInput({
     label,
     placeholder,
     type,
-    required,
     register,
     warn,
     warningMsg,
+    readOnly,
+    required,
     hideMsg,
-}: {
-    label?: string
-    placeholder?: string
-    required?: boolean
-    type: "number" | "text" | "email" | "password" | "tel" | "search" | "url"
-    register?: UseFormRegisterReturn<any>
-    warn?: boolean
-    warningMsg?: string
-    hideMsg?: boolean
-}) {
+    ...restProps
+}: FormStringInputProps) {
+    // Hooks
     const [isShowPassword, setShowPassword] = useState(false)
 
     const toggleShowPassword = () => {
@@ -59,8 +62,10 @@ export default function FormStringInput({
                                 : "password"
                             : type
                     }
-                    required={required}
                     {...register}
+                    readOnly={readOnly}
+                    required={required}
+                    {...restProps}
                     className="w-full h-11 px-3 text-xl bg-white
                     border-prim-green-600 border-solid border-2 rounded-xl"
                     style={constructAdditionalStyle()}

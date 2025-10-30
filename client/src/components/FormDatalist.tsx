@@ -5,6 +5,7 @@ import StatusMessage from "./StatusMessage"
 export default function FormDatalist({
     label,
     optionItems,
+    readOnly,
     required,
     register,
     warn,
@@ -13,6 +14,7 @@ export default function FormDatalist({
 }: {
     label?: string
     optionItems: { value: string; label: string; id: string }[]
+    readOnly?: boolean
     required?: boolean
     register?: UseFormRegisterReturn<any>
     warn?: boolean
@@ -32,6 +34,8 @@ export default function FormDatalist({
             <input
                 type="text"
                 list={datalistID}
+                readOnly={readOnly}
+                required={required}
                 {...register}
                 className="w-full h-11 pl-3 text-xl bg-white
                     border-prim-green-600 border-solid border-2 rounded-xl"

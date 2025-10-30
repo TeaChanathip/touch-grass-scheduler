@@ -1,27 +1,27 @@
-button.positive {
+.my-button.positive {
     color: white;
     background-color: var(--color-prim-green-400);
 }
-button.positive:hover {
+.my-button.positive:hover {
     background-color: var(--color-prim-green-700);
 }
 
-button.neutral {
+.my-button.neutral {
     background-color: var(--color-prim-green-100);
 }
-button.neutral:hover {
+.my-button.neutral:hover {
     background-color: var(--color-prim-green-500);
 }
 
-button.negative {
+.my-button.negative {
     color: white;
     background-color: var(--color-prim-red);
 }
-button.negative:hover {
+.my-button.negative:hover {
     background-color: #650000;
 }
 
-button:disabled,
-button:disabled:hover {
+.my-button:disabled,
+.my-button:disabled:hover {
     background-color: var(--color-prim-gray-100);
 }
