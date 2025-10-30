@@ -1,20 +1,25 @@
-import { UseFormRegisterReturn } from "react-hook-form"
+import { useFormContext } from "react-hook-form"
 import StatusMessage from "./StatusMessage"
+import { memo } from "react"
 
-export default function FormRadioGroup({
+const FormRadioGroup = ({
     label,
+    name,
     options,
-    register,
     warn,
-    warningMsg,
 }: {
     label?: string
+    name: string
     options: { value: string; label: string }[]
-    required?: boolean
-    register?: UseFormRegisterReturn<any>
     warn?: boolean
-    warningMsg?: string
-}) {
+}) => {
+    // Form Context
+    const {
+        register,
+        formState: { errors },
+    } = useFormContext()
+    const warningMsg = errors[name]?.message as string | undefined
+
     // Assign id to options
     const optionItems = options.map((option) => {
         return { ...option, id: `radio-choice-${label}-${option.value}` }
@@ -60,3 +65,5 @@ export default function FormRadioGroup({
         </div>
     )
 }
+
+export default memo(FormRadioGroup)

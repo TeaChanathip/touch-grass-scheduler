@@ -1,25 +1,31 @@
-import { UseFormRegisterReturn } from "react-hook-form"
+import { useFormContext } from "react-hook-form"
 import StatusMessage from "./StatusMessage"
+import { memo } from "react"
 
-export default function FormSelect({
+const FormSelect = ({
     label,
     optionItems,
+    name,
     required,
     disabled,
-    register,
     warn,
-    warningMsg,
     hideMsg,
 }: {
     label?: string
     optionItems: { value: string; label: string; id: string }[]
+    name: string
     required?: boolean
     disabled?: boolean
-    register?: UseFormRegisterReturn<any>
     warn?: boolean
-    warningMsg?: string
     hideMsg?: boolean
-}) {
+}) => {
+    // Form Context
+    const {
+        register,
+        formState: { errors },
+    } = useFormContext()
+    const warningMsg = errors[name]?.message as string | undefined
+
     return (
         <div className="flex flex-col">
             {label && (
@@ -30,7 +36,7 @@ export default function FormSelect({
             )}
             <select
                 defaultValue=""
-                {...register}
+                {...register(name)}
                 className="w-full h-11 pl-3 text-xl bg-white
                     border-prim-green-600 border-solid border-2 rounded-xl"
                 style={warn ? { borderColor: "var(--color-prim-red)" } : {}}
@@ -55,3 +61,5 @@ export default function FormSelect({
         </div>
     )
 }
+
+export default memo(FormSelect)

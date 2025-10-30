@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm, UseFormHandleSubmit } from "react-hook-form"
+import { FormProvider, useForm, useFormContext } from "react-hook-form"
 import FormStringInput from "../../components/FormStringInput"
 import MyButton from "../../components/MyButton"
 import Link from "next/link"
@@ -12,9 +12,10 @@ import {
     selectUserErrMsg,
     selectUserStatus,
 } from "../../store/features/user/userSlice"
-import { useEffect } from "react"
+import { memo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import StatusMessage from "../../components/StatusMessage"
+import FormPassword from "../../components/FormPassword"
 
 export default function LoginPage() {
     // Store
@@ -41,50 +42,41 @@ const schema = z.object({
         .max(64, "At most 64 characters"),
 })
 
-function LoginForm() {
+const LoginForm = memo(function LoginForm() {
     // Hooks
-    const {
-        register,
-        handleSubmit,
-        formState: { errors: valErrors, isSubmitting },
-    } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
+    const formMethods = useForm({
+        resolver: zodResolver(schema),
+        mode: "onChange",
+    })
 
     return (
-        <form className="w-[70vw] max-w-96 flex flex-col gap-5">
-            <FormStringInput
-                label="Email Address"
-                type="email"
-                required
-                register={register("email")}
-                warn={valErrors.email !== undefined}
-                warningMsg={valErrors.email?.message}
-            />
-            <FormStringInput
-                label="Password"
-                type="password"
-                required
-                register={register("password")}
-                warn={valErrors.password !== undefined}
-                warningMsg={valErrors.password?.message}
-            />
-            <ButtonSection
-                handleSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                hasValidationErr={Object.keys(valErrors).length != 0}
-            />
-        </form>
+        <FormProvider {...formMethods}>
+            <form className="w-[70vw] max-w-96 flex flex-col gap-5">
+                <FormStringInput
+                    label="Email Address"
+                    type="email"
+                    name="email"
+                    required
+                />
+                <FormPassword
+                    label="Password"
+                    type="password"
+                    name="password"
+                    required
+                />
+                <ButtonSection />
+            </form>
+        </FormProvider>
     )
-}
+})
 
-function ButtonSection({
-    handleSubmit,
-    isSubmitting,
-    hasValidationErr,
-}: {
-    handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
-    isSubmitting: boolean
-    hasValidationErr: boolean
-}) {
+const ButtonSection = memo(function ButtonSection() {
+    // Form Context
+    const {
+        handleSubmit,
+        formState: { isValid, isSubmitting },
+    } = useFormContext()
+
     // Store
     const dispatch = useAppDispatch()
     const userErrMsg = useAppSelector(selectUserErrMsg)
@@ -111,7 +103,7 @@ function ButtonSection({
                 <MyButton
                     variant="positive"
                     type="submit"
-                    disabled={hasValidationErr || isSubmitting}
+                    disabled={!isValid || isSubmitting}
                     onClick={handleSubmit(submitHandler)}
                     className="w-full md:w-44"
                 >
@@ -128,4 +120,4 @@ function ButtonSection({
             </div>
         </section>
     )
-}
+})

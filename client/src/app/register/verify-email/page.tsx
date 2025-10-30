@@ -1,13 +1,13 @@
 "use client"
 
-import { useForm, UseFormHandleSubmit } from "react-hook-form"
+import { FormProvider, useForm, useFormContext } from "react-hook-form"
 import FormStringInput from "../../../components/FormStringInput"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import MyButton from "../../../components/MyButton"
 import { ApiService } from "../../../services/api.service"
 import { AuthService } from "../../../services/auth/auth.service"
-import { useState } from "react"
+import { memo, useState } from "react"
 import StatusMessage from "../../../components/StatusMessage"
 import useCountdown from "../../../hooks/useCountdown"
 
@@ -18,40 +18,33 @@ const schema = z.object({
 
 export default function VerifyEmailForm() {
     // Hooks
-    const {
-        register,
-        handleSubmit,
-        formState: { errors: valErrors, isSubmitting },
-    } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
+    const formMethods = useForm({
+        resolver: zodResolver(schema),
+        mode: "onChange",
+    })
 
     return (
-        <form className="w-[70vw] max-w-96 flex flex-col gap-5">
-            <FormStringInput
-                type="email"
-                label="Email Address"
-                required
-                register={register("email")}
-                warn={valErrors.email !== undefined}
-                warningMsg={valErrors.email?.message}
-            />
-            <ButtonSection
-                handleSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                hasValidationErr={Object.keys(valErrors).length != 0}
-            />
-        </form>
+        <FormProvider {...formMethods}>
+            <form className="w-[70vw] max-w-96 flex flex-col gap-5">
+                <FormStringInput
+                    label="Email Address"
+                    type="email"
+                    name="email"
+                    required
+                />
+                <ButtonSection />
+            </form>
+        </FormProvider>
     )
 }
 
-function ButtonSection({
-    handleSubmit,
-    isSubmitting,
-    hasValidationErr,
-}: {
-    handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
-    isSubmitting: boolean
-    hasValidationErr: boolean
-}) {
+const ButtonSection = memo(function ButtonSection() {
+    // Form Context
+    const {
+        handleSubmit,
+        formState: { isValid, isSubmitting },
+    } = useFormContext()
+
     // Hooks
     const [countdown, startCountdown] = useCountdown(30)
     const [responseMsg, setResponseMsg] = useState<
@@ -90,7 +83,7 @@ function ButtonSection({
             <MyButton
                 variant="positive"
                 type="submit"
-                disabled={hasValidationErr || isSubmitting || countdown !== 0}
+                disabled={!isValid || isSubmitting || countdown !== 0}
                 onClick={handleSubmit(submitHandler)}
                 className="w-full md:w-44"
             >
@@ -98,4 +91,4 @@ function ButtonSection({
             </MyButton>
         </section>
     )
-}
+})

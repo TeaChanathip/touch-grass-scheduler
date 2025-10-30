@@ -1,27 +1,33 @@
-import { useId } from "react"
-import { UseFormRegisterReturn } from "react-hook-form"
+import { memo, useId } from "react"
+import { useFormContext } from "react-hook-form"
 import StatusMessage from "./StatusMessage"
 
-export default function FormDatalist({
+const FormDatalist = ({
     label,
+    name,
     optionItems,
     readOnly,
     required,
-    register,
     warn,
-    warningMsg,
     hideMsg,
 }: {
     label?: string
+    name: string
     optionItems: { value: string; label: string; id: string }[]
     readOnly?: boolean
     required?: boolean
-    register?: UseFormRegisterReturn<any>
     warn?: boolean
-    warningMsg?: string
     hideMsg?: boolean
-}) {
+}) => {
+    // Generate ID for referencing datalist
     const datalistID = useId()
+
+    // Form Context
+    const {
+        register,
+        formState: { errors },
+    } = useFormContext()
+    const warningMsg = errors[name]?.message as string | undefined
 
     return (
         <div className="flex flex-col">
@@ -36,7 +42,7 @@ export default function FormDatalist({
                 list={datalistID}
                 readOnly={readOnly}
                 required={required}
-                {...register}
+                {...register(name)}
                 className="w-full h-11 pl-3 text-xl bg-white
                     border-prim-green-600 border-solid border-2 rounded-xl"
                 style={warn ? { borderColor: "var(--color-prim-red)" } : {}}
@@ -58,3 +64,5 @@ export default function FormDatalist({
         </div>
     )
 }
+
+export default memo(FormDatalist)

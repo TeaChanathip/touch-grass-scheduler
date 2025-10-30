@@ -2,12 +2,12 @@
 
 import * as z from "zod"
 import { UserGender, UserRole } from "../../../interfaces/User.interface"
-import { useForm, UseFormHandleSubmit } from "react-hook-form"
+import { FormProvider, useForm, useFormContext } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import FormStringInput from "../../../components/FormStringInput"
 import FormSelect from "../../../components/FormSelect"
 import FormRadioGroup from "../../../components/FormRadioGroup"
-import { useEffect } from "react"
+import { memo, useEffect } from "react"
 import MyButton from "../../../components/MyButton"
 import FormPhone from "../../../components/FormPhone"
 import { useAppDispatch, useAppSelector } from "../../../store/hooks"
@@ -25,6 +25,7 @@ import { CountryCodeSchema } from "../../../schemas/CountryCodeSchema"
 import { genderOptions, roleOptions } from "../../../constants/options"
 import StatusMessage from "../../../components/StatusMessage"
 import { isSchoolPersonnel } from "../../../utils/isSchoolPersonnel"
+import FormPassword from "../../../components/FormPassword"
 
 export default function RegisterPage() {
     // Store
@@ -88,14 +89,12 @@ const schema = z
 
 function RegisterForm() {
     // Hooks
-    const {
-        register,
-        handleSubmit,
-        formState: { errors: valErrors, isSubmitting },
-        watch,
-        setValue,
-        trigger,
-    } = useForm({ resolver: zodResolver(schema), mode: "onChange" })
+    const formMethods = useForm({
+        resolver: zodResolver(schema),
+        mode: "onChange",
+    })
+
+    const { watch, setValue, trigger } = formMethods
 
     // Watch
     const currentRole = watch("role")
@@ -117,104 +116,71 @@ function RegisterForm() {
     }, [currentPwd, trigger])
 
     return (
-        <form className="w-4/5 lg:w-1/3 flex flex-col gap-3 mb-5">
-            <div className="w-full flex flex-row gap-4 justify-between">
-                <FormStringInput
-                    label="Frist Name"
-                    type="text"
+        <FormProvider {...formMethods}>
+            <form className="w-4/5 lg:w-1/3 flex flex-col gap-3 mb-5">
+                <div className="w-full flex flex-row gap-4 justify-between">
+                    <FormStringInput
+                        label="Frist Name"
+                        type="text"
+                        name="first_name"
+                        required
+                    />
+                    <FormStringInput
+                        label="Middle Name"
+                        name="middle_name"
+                        type="text"
+                    />
+                </div>
+                <div className="w-full flex flex-row gap-4 justify-between">
+                    <FormStringInput
+                        label="Last Name"
+                        name="last_name"
+                        type="text"
+                    />
+                    <FormSelect
+                        label="Gender"
+                        name="gender"
+                        optionItems={genderOptions}
+                        required
+                    />
+                </div>
+                <FormPhone
+                    countryCodeName="country_code"
+                    phoneName="phone"
                     required
-                    register={register("first_name")}
-                    warn={valErrors.first_name !== undefined}
-                    warningMsg={valErrors.first_name?.message}
                 />
-                <FormStringInput
-                    label="Middle Name"
-                    type="text"
-                    register={register("middle_name")}
-                    warn={valErrors.middle_name !== undefined}
-                    warningMsg={valErrors.middle_name?.message}
+                <FormRadioGroup
+                    label="Role"
+                    name="role"
+                    options={roleOptions}
                 />
-            </div>
-            <div className="w-full flex flex-row gap-4 justify-between">
-                <FormStringInput
-                    label="Last Name"
-                    type="text"
-                    register={register("last_name")}
-                    warn={valErrors.last_name !== undefined}
-                    warningMsg={valErrors.last_name?.message}
-                />
-                <FormSelect
-                    label="Gender"
-                    optionItems={genderOptions}
+                {isSchoolPersonnel(currentRole) && (
+                    <FormStringInput
+                        label="School Number"
+                        type="text"
+                        name="school_num"
+                        required
+                    />
+                )}
+                <FormPassword label="Password" name="password" required />
+                <FormPassword
+                    label="Confirm Password"
+                    name="confirm_password"
                     required
-                    register={register("gender")}
-                    warn={valErrors.gender !== undefined}
-                    warningMsg={valErrors.gender?.message}
                 />
-            </div>
-            <FormPhone
-                required
-                countryCodeRegister={register("country_code")}
-                phoneRegister={register("phone")}
-                warn={
-                    valErrors.country_code !== undefined ||
-                    valErrors.phone !== undefined
-                }
-                warningMsg={
-                    valErrors.country_code?.message ?? valErrors.phone?.message
-                }
-            />
-            <FormRadioGroup
-                label="Role"
-                options={roleOptions}
-                register={register("role")}
-                warn={valErrors.role !== undefined}
-                warningMsg={valErrors.role?.message}
-            />
-            {isSchoolPersonnel(currentRole) && (
-                <FormStringInput
-                    label="School Number"
-                    type="text"
-                    required
-                    register={register("school_num")}
-                    warn={valErrors.school_num !== undefined}
-                    warningMsg={valErrors.school_num?.message}
-                />
-            )}
-            <FormStringInput
-                label="Password"
-                type="password"
-                required
-                register={register("password")}
-                warn={valErrors.password !== undefined}
-                warningMsg={valErrors.password?.message}
-            />
-            <FormStringInput
-                label="Confirm Password"
-                type="password"
-                required
-                register={register("confirm_password")}
-                warn={valErrors.confirm_password !== undefined}
-                warningMsg={valErrors.confirm_password?.message}
-            />
-            <ButtonSection
-                handleSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                hasValidationErr={Object.keys(valErrors).length != 0}
-            />
-        </form>
+                <ButtonSection />
+            </form>
+        </FormProvider>
     )
 }
 
-function ButtonSection({
-    handleSubmit,
-    isSubmitting,
-    hasValidationErr,
-}: {
-    handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
-    isSubmitting: boolean
-    hasValidationErr: boolean
-}) {
+const ButtonSection = memo(function ButtonSection() {
+    // Form Context
+    const {
+        handleSubmit,
+        formState: { isValid, isSubmitting },
+    } = useFormContext()
+
     // Store
     const dispatch = useAppDispatch()
     const userErrMsg = useAppSelector(selectUserErrMsg)
@@ -261,7 +227,7 @@ function ButtonSection({
             <MyButton
                 variant="positive"
                 type="submit"
-                disabled={isSubmitting || hasValidationErr}
+                disabled={!isValid || isSubmitting}
                 onClick={handleSubmit(submitHandler)}
                 className="mt-3 w-full md:w-44 self-center"
             >
@@ -269,4 +235,4 @@ function ButtonSection({
             </MyButton>
         </section>
     )
-}
+})

@@ -1,26 +1,33 @@
-import { UseFormRegisterReturn } from "react-hook-form"
+import { useFormContext } from "react-hook-form"
 import FormStringInput from "./FormStringInput"
 import { countryCodesOptions } from "../constants/options"
 import FormDatalist from "./FormDatalist"
 import StatusMessage from "./StatusMessage"
+import { memo } from "react"
 
-export default function FormPhone({
+const FormPhone = ({
+    countryCodeName,
+    phoneName,
     readOnly,
     required,
-    countryCodeRegister,
-    phoneRegister,
     warn,
-    warningMsg,
     hideMsg,
 }: {
+    countryCodeName: string
+    phoneName: string
     readOnly?: boolean
     required?: boolean
-    countryCodeRegister?: UseFormRegisterReturn<any>
-    phoneRegister?: UseFormRegisterReturn<any>
     warn?: boolean
-    warningMsg?: string
     hideMsg?: boolean
-}) {
+}) => {
+    // Form Context
+    const {
+        formState: { errors },
+    } = useFormContext()
+    const warningMsg =
+        (errors[countryCodeName]?.message as string | undefined) ||
+        (errors[phoneName]?.message as string | undefined)
+
     return (
         <div className="flex flex-col">
             <label className="text-2xl">
@@ -30,9 +37,9 @@ export default function FormPhone({
                 <span className="w-24">
                     <FormDatalist
                         optionItems={countryCodesOptions}
+                        name={countryCodeName}
                         readOnly={readOnly}
                         required={required}
-                        register={countryCodeRegister}
                         warn={warn}
                         hideMsg
                     />
@@ -40,9 +47,9 @@ export default function FormPhone({
                 <span className="w-full">
                     <FormStringInput
                         type="tel"
+                        name={phoneName}
                         readOnly={readOnly}
                         required={required}
-                        register={phoneRegister}
                         warn={warn}
                         hideMsg
                     />
@@ -58,3 +65,5 @@ export default function FormPhone({
         </div>
     )
 }
+
+export default memo(FormPhone)

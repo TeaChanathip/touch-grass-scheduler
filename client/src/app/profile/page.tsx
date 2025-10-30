@@ -1,9 +1,10 @@
 "use client"
 
 import {
+    FormProvider,
     useForm,
+    useFormContext,
     UseFormHandleSubmit,
-    UseFormRegister,
     UseFormReset,
 } from "react-hook-form"
 import {
@@ -25,8 +26,6 @@ import MyButton from "../../components/MyButton"
 import StatusMessage from "../../components/StatusMessage"
 import ImageUploader from "../../components/ImageUploader"
 import { Dispatch, SetStateAction, useState } from "react"
-import { Visibility } from "@mui/icons-material"
-import { idnEmail } from "zod/v4/core/regexes.cjs"
 import { isSchoolPersonnel } from "../../utils/isSchoolPersonnel"
 
 export default function ProfilePage() {
@@ -41,7 +40,7 @@ export default function ProfilePage() {
                 disabled={!isEditing}
                 width={200}
                 height={200}
-                className="rounded-full border border-[1px] border-prim-green-800 bg-prim-green-50"
+                className="rounded-full border border-prim-green-800 bg-prim-green-50"
             />
             <UserProfileForm isEditing={isEditing} setEditing={setEditing} />
         </>
@@ -90,12 +89,7 @@ function UserProfileForm({
     // Parse phone number
     const phoneNumber = parsePhoneNumberFromString(user.phone) as PhoneNumber
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors: valErrors, isSubmitting, isDirty, dirtyFields },
-        reset,
-    } = useForm({
+    const formMethods = useForm({
         resolver: zodResolver(schema),
         mode: "onChange",
         defaultValues: {
@@ -112,85 +106,57 @@ function UserProfileForm({
     })
 
     return (
-        <form className="w-4/5 lg:w-1/3 flex flex-col gap-3 mb-5">
-            <div className="w-full flex flex-row gap-4 justify-between">
-                <FormStringInput
-                    label="Frist Name"
-                    type="text"
+        <FormProvider {...formMethods}>
+            <form className="w-4/5 lg:w-1/3 flex flex-col gap-3 mb-5">
+                <div className="w-full flex flex-row gap-4 justify-between">
+                    <FormStringInput
+                        label="Frist Name"
+                        type="text"
+                        name="first_name"
+                        required
+                        readOnly={!isEditing}
+                        hideMsg={!isEditing}
+                    />
+                    <FormStringInput
+                        label="Middle Name"
+                        type="text"
+                        name="middle_name"
+                        readOnly={!isEditing}
+                        hideMsg={!isEditing}
+                    />
+                </div>
+                <div className="w-full flex flex-row gap-4 justify-between">
+                    <FormStringInput
+                        label="Last Name"
+                        type="text"
+                        name="last_name"
+                        readOnly={!isEditing}
+                        hideMsg={!isEditing}
+                    />
+                    <FormSelect
+                        label="Gender"
+                        optionItems={genderOptions}
+                        name="gender"
+                        required
+                        disabled={!isEditing}
+                        hideMsg={!isEditing}
+                    />
+                </div>
+                <FormPhone
                     required
-                    register={register("first_name")}
-                    warn={valErrors.first_name !== undefined}
-                    warningMsg={valErrors.first_name?.message}
+                    countryCodeName="country_code"
+                    phoneName="phone"
                     readOnly={!isEditing}
                     hideMsg={!isEditing}
                 />
-                <FormStringInput
-                    label="Middle Name"
-                    type="text"
-                    register={register("middle_name")}
-                    warn={valErrors.middle_name !== undefined}
-                    warningMsg={valErrors.middle_name?.message}
-                    readOnly={!isEditing}
-                    hideMsg={!isEditing}
-                />
-            </div>
-            <div className="w-full flex flex-row gap-4 justify-between">
-                <FormStringInput
-                    label="Last Name"
-                    type="text"
-                    register={register("last_name")}
-                    warn={valErrors.last_name !== undefined}
-                    warningMsg={valErrors.last_name?.message}
-                    readOnly={!isEditing}
-                    hideMsg={!isEditing}
-                />
-                <FormSelect
-                    label="Gender"
-                    optionItems={genderOptions}
-                    required
-                    register={register("gender")}
-                    warn={valErrors.gender !== undefined}
-                    warningMsg={valErrors.gender?.message ?? ""}
-                    disabled={!isEditing}
-                    hideMsg={!isEditing}
-                />
-            </div>
-            <FormPhone
-                required
-                countryCodeRegister={register("country_code")}
-                phoneRegister={register("phone")}
-                warn={
-                    valErrors.country_code !== undefined ||
-                    valErrors.phone !== undefined
-                }
-                warningMsg={
-                    valErrors.country_code?.message ?? valErrors.phone?.message
-                }
-                readOnly={!isEditing}
-                hideMsg={!isEditing}
-            />
-            <UnmodifiedFieldsGroup isEditing={isEditing} register={register} />
-            <ButtonSection
-                handleSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                hasValidationErr={Object.keys(valErrors).length !== 0}
-                isDirty={isDirty}
-                dirtyFields={dirtyFields}
-                reset={reset}
-                isEditing={isEditing}
-                setEditing={setEditing}
-            />
-        </form>
+                <UnmodifiedFieldsGroup isEditing={isEditing} />
+                <ButtonSection isEditing={isEditing} setEditing={setEditing} />
+            </form>
+        </FormProvider>
     )
 }
 
-function UnmodifiedFieldsGroup({
-    isEditing,
-    register,
-}: {
-    isEditing: boolean
-    register: UseFormRegister<z.infer<typeof schema>>
-}) {
+function UnmodifiedFieldsGroup({ isEditing }: { isEditing: boolean }) {
     // Store
     const user = useAppSelector(selectUser) as User
 
@@ -200,14 +166,14 @@ function UnmodifiedFieldsGroup({
                 <FormStringInput
                     label="Email"
                     type="text"
-                    register={register("email")}
+                    name="email"
                     readOnly
                     hideMsg
                 />
                 <FormStringInput
                     label="Role"
                     type="text"
-                    register={register("role")}
+                    name="role"
                     readOnly
                     hideMsg
                 />
@@ -216,7 +182,7 @@ function UnmodifiedFieldsGroup({
                 <FormStringInput
                     label="School Number"
                     type="text"
-                    register={register("school_num")}
+                    name="school_num"
                     readOnly
                     hideMsg
                 />
@@ -226,36 +192,32 @@ function UnmodifiedFieldsGroup({
 }
 
 function ButtonSection({
-    handleSubmit,
-    isSubmitting,
-    hasValidationErr,
-    isDirty,
-    dirtyFields,
-    reset,
     isEditing,
     setEditing,
 }: {
-    handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
-    isSubmitting: boolean
-    hasValidationErr: boolean
-    isDirty: boolean
-    dirtyFields: Partial<
-        Readonly<{
-            first_name?: boolean
-            middle_name?: boolean
-            last_name?: boolean
-            gender?: boolean
-            country_code?: boolean
-            phone?: boolean
-        }>
-    >
-    reset: UseFormReset<z.infer<typeof schema>>
     isEditing: boolean
     setEditing: Dispatch<SetStateAction<boolean>>
 }) {
     // Store
     const dispatch = useAppDispatch()
     const userErrMsg = useAppSelector(selectUserErrMsg)
+
+    // Form Context
+    const {
+        handleSubmit,
+        reset,
+        formState: { isDirty, dirtyFields, isSubmitting, isValid },
+    }: {
+        handleSubmit: UseFormHandleSubmit<z.infer<typeof schema>>
+        reset: UseFormReset<z.infer<typeof schema>>
+        formState: {
+            isDirty: boolean
+            isValid: boolean
+            dirtyFields: Partial<Record<keyof z.infer<typeof schema>, boolean>>
+            isSubmitting: boolean
+            errors: Partial<Record<keyof z.infer<typeof schema>, any>>
+        }
+    } = useFormContext<z.infer<typeof schema>>()
 
     // Button Handler
     const submitHandler = async (formData: z.infer<typeof schema>) => {
@@ -305,7 +267,7 @@ function ButtonSection({
                     <MyButton
                         variant="positive"
                         type="submit"
-                        disabled={!isDirty || hasValidationErr || isSubmitting}
+                        disabled={!isDirty || !isValid || isSubmitting}
                         onClick={handleSubmit(submitHandler)}
                         className="w-full md:w-44"
                     >

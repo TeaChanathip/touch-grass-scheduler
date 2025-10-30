@@ -1,25 +1,27 @@
 "use client"
 
-import { CSSProperties, InputHTMLAttributes, memo } from "react"
-import { useFormContext } from "react-hook-form"
+import { VisibilityOffRounded, VisibilityRounded } from "@mui/icons-material"
+import { CSSProperties, InputHTMLAttributes, memo, useState } from "react"
+import { get, useFormContext } from "react-hook-form"
 import StatusMessage from "./StatusMessage"
 
-interface FormStringInputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface FormPasswordProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string
     name: string
-    type: "number" | "text" | "email" | "tel" | "search" | "url" // Overwrite
     warn?: boolean
     hideMsg?: boolean
 }
 
-const FormStringInput = ({
+const FormPassword = ({
     label,
-    type,
     name,
     warn,
     hideMsg,
     ...restProps
-}: FormStringInputProps) => {
+}: FormPasswordProps) => {
+    // Hooks
+    const [isShowPassword, setShowPassword] = useState(false)
+
     // Form Context
     const {
         register,
@@ -27,11 +29,16 @@ const FormStringInput = ({
     } = useFormContext()
     const warningMsg = errors[name]?.message as string | undefined
 
+    const toggleShowPassword = () => {
+        setShowPassword(!isShowPassword)
+    }
+
     const constructAdditionalStyle = () => {
         const style: CSSProperties = {}
-        if (warn) {
+        if (warn || warningMsg) {
             style.borderColor = "var(--color-prim-red)"
         }
+        style.paddingRight = "40px"
         return style
     }
 
@@ -47,13 +54,23 @@ const FormStringInput = ({
             )}
             <span className="flex flex-row items-center justify-end">
                 <input
-                    type={type}
+                    type={isShowPassword ? "text" : "password"}
                     {...restProps}
                     {...register(name)}
                     className="w-full h-11 px-3 text-xl bg-white
                     border-prim-green-600 border-solid border-2 rounded-xl"
                     style={constructAdditionalStyle()}
                 />
+                <span
+                    className="absolute mr-3 cursor-pointer"
+                    onClick={() => toggleShowPassword()}
+                >
+                    {isShowPassword ? (
+                        <VisibilityOffRounded />
+                    ) : (
+                        <VisibilityRounded />
+                    )}
+                </span>
             </span>
             {!hideMsg && (
                 <StatusMessage
@@ -61,11 +78,9 @@ const FormStringInput = ({
                     variant="error"
                     className="text-xl"
                 />
-            )}{" "}
+            )}
         </div>
     )
 }
 
-export default memo(FormStringInput)
-
-// TODO: Fix fucking re-rendering every singl
+export default memo(FormPassword)
