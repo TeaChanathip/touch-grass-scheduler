@@ -23,6 +23,8 @@ var (
 	ErrMailHTMLSetting = CustomError{StatusCode: http.StatusInternalServerError, Message: "set HTML to mail message failed"}
 	ErrMailSending     = CustomError{StatusCode: http.StatusInternalServerError, Message: "mail sending failed"}
 	ErrVariableParsing = CustomError{StatusCode: http.StatusInternalServerError, Message: "variable parsing failed"}
+	ErrUUIDGenerating  = CustomError{StatusCode: http.StatusInternalServerError, Message: "UUID generation failed"}
+	ErrStorage         = CustomError{StatusCode: http.StatusInternalServerError, Message: "storage error"}
 
 	// 400 Bad Request
 	ErrDuplicatedEmail          = CustomError{StatusCode: http.StatusBadRequest, Message: "email already exists"}

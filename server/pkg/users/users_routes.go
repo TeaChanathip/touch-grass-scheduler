@@ -54,11 +54,11 @@ func (routes *UsersRoutes) Setup() {
 		routes.RequestBodyValidator.Handler("update-user", UpdateUserBody{}),
 		routes.UsersController.UpdateUser)
 
-	routes.Router.GET(string(endpoints.GetAvartarSignedURL),
+	routes.Router.GET(string(endpoints.GetUploadAvartarSignedURL),
 		routes.AuthMiddleware.HandlerWithRole(types.UserRoleStudent,
 			types.UserRoleTeacher,
 			types.UserRoleGuardian),
-	)
+		routes.UsersController.GetUploadAvartarSignedURL)
 
 	// usersGroup.DELETE("users/:id")
 }

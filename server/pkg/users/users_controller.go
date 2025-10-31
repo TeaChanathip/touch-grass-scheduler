@@ -103,5 +103,24 @@ func (controller *UsersController) UpdateUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"user": user.ToPublic()})
 }
 
+func (controller *UsersController) GetUploadAvartarSignedURL(ctx *gin.Context) {
+	// Get userID Context that set by AuthMiddleware
+	_userID, _ := ctx.Get("user_id")
+	userID, err := uuid.Parse(_userID.(string))
+	if err != nil {
+		controller.Logger.Debug("Failed to parse userID", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+		return
+	}
+
+	response, err := controller.UserService.GetUploadAvartarSignedURL(userID)
+	if err != nil {
+		common.HandleBusinessLogicErr(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
 // func (controller *UsersController) DeleteUser(ctx *gin.Context) {
 // }

@@ -6,11 +6,11 @@ import (
 )
 
 type User struct {
-	ID         uuid.UUID        `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Role       types.UserRole   `gCustomClaimsExampleorm:"type:role;not null" json:"role"`
+	ID         uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Role       types.UserRole   `gorm:"type:role;not null" json:"role"`
 	FirstName  string           `gorm:"type:varchar(128);not null" json:"first_name"`
-	MiddleName string           `gorm:"type:varchar(128);null;default:null" json:"middle_name"`
-	LastName   string           `gorm:"type:varchar(128);null;default:null" json:"last_name"`
+	MiddleName string           `gorm:"type:varchar(128);null;default:''" json:"middle_name"`
+	LastName   string           `gorm:"type:varchar(128);null;default:''" json:"last_name"`
 	Phone      string           `gorm:"type:varchar(15);not null" json:"phone"`
 	Gender     types.UserGender `gorm:"type:gender;not null" json:"gender"`
 	Email      string           `gorm:"type:varchar(255);not null;unique" json:"email"`

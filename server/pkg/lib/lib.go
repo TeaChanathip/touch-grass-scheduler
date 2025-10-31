@@ -9,5 +9,6 @@ var Module = fx.Module(
 		NewDatabase,
 		NewRouter,
 		NewMailClient,
+		NewStorageClient,
 	),
 )

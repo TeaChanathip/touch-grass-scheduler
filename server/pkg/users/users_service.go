@@ -1,12 +1,19 @@
 package usersfx
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"net/url"
 	"strings"
+	"time"
 
+	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
 	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -14,13 +21,17 @@ import (
 
 type UserServiceParams struct {
 	fx.In
-	Logger *zap.Logger
-	DB     *gorm.DB
+	AppConfig     *configfx.AppConfig
+	Logger        *zap.Logger
+	DB            *gorm.DB
+	StorageClient *minio.Client
 }
 
 type UserService struct {
-	Logger *zap.Logger
-	DB     *gorm.DB
+	AppConfig     *configfx.AppConfig
+	Logger        *zap.Logger
+	DB            *gorm.DB
+	StorageClient *minio.Client
 }
 
 type UserServiceInterface interface {
@@ -28,6 +39,8 @@ type UserServiceInterface interface {
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(id uuid.UUID) (*models.User, error)
 	UpdateUserByID(id uuid.UUID, body *UpdateUserBody) (*models.User, error)
+	GetUploadAvartarSignedURL(userID uuid.UUID) (map[string]any, error)
+	generateUploadURL(objectName string) (*url.URL, map[string]string, error)
 }
 
 // Verify interface implementation at compile time
@@ -35,12 +48,14 @@ var _ UserServiceInterface = (*UserService)(nil)
 
 func NewUserService(params UserServiceParams) UserServiceInterface {
 	return &UserService{
-		Logger: params.Logger,
-		DB:     params.DB,
+		AppConfig:     params.AppConfig,
+		Logger:        params.Logger,
+		DB:            params.DB,
+		StorageClient: params.StorageClient,
 	}
 }
 
-// ======================== HELPER METHODS ========================
+// ======================== METHODS ========================
 
 func (service *UserService) CreateUser(user *models.User) error {
 	// Hash the password
@@ -168,4 +183,73 @@ func (service *UserService) UpdateUserByID(id uuid.UUID, body *UpdateUserBody) (
 	}
 
 	return updatedUser, nil
+}
+
+func (service *UserService) GetUploadAvartarSignedURL(userID uuid.UUID) (map[string]any, error) {
+	// Generate ID that will be used in object name
+	objectID, err := uuid.NewRandom()
+	if err != nil {
+		service.Logger.Error("Error while generating UUID", zap.Error(err))
+		return nil, common.ErrUUIDGenerating
+	}
+
+	// Generate URL
+	objectName := fmt.Sprintf("avartars/%s.webp", objectID.String())
+	url, formData, err := service.generateUploadURL(objectName)
+	if err != nil {
+		service.Logger.Error("", zap.Error(err))
+		return nil, common.ErrStorage
+	}
+
+	// Create Upload entity in DB
+	upload := &models.Upload{
+		ObjectName: objectName,
+		UserID:     userID,
+		Type:       types.UploadTypeAvartar,
+		Status:     types.UploadStatusPending,
+	}
+
+	result := service.DB.Create(upload)
+	if result.Error != nil {
+		service.Logger.Error("Database error while creating user",
+			zap.Error(result.Error),
+		)
+		return nil, common.ErrDatabase
+	}
+
+	response := map[string]any{
+		"url":         url.String(),
+		"form_data":   formData,
+		"object_name": objectName,
+	}
+
+	return response, nil
+}
+
+// ======================== HELPER METHODS ========================
+func (service *UserService) generateUploadURL(objectName string) (*url.URL, map[string]string, error) {
+	// Create upload policy
+	policy := minio.NewPostPolicy()
+
+	// Set the bucket and object name
+	if err := policy.SetBucket(service.AppConfig.StorageBucketName); err != nil {
+		return nil, nil, err
+	}
+	if err := policy.SetKey(objectName); err != nil {
+		return nil, nil, err
+	}
+
+	// Set an expiration
+	if err := policy.SetExpires(time.Now().Add(3 * time.Minute)); err != nil {
+		return nil, nil, err
+	}
+
+	// Generate signed URL
+	ctx := context.Background()
+	url, formData, err := service.StorageClient.PresignedPostPolicy(ctx, policy)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return url, formData, nil
 }

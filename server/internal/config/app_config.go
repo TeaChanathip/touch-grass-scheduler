@@ -40,6 +40,12 @@ type AppConfig struct {
 	MailPort     int    `env:"MAIL_PORT,required"`
 	MailUser     string `env:"MAIL_USER,required"`
 	MailPassword string `env:"MAIL_PASSWORD,required"`
+
+	// Object Storage
+	StorageEndpoint        string `env:"STORAGE_ENDPOINT,required"`
+	StorageAccessKeyID     string `env:"STORAGE_ACCESS_KEY_ID,required"`
+	StorageSecretAccessKey string `env:"STORAGE_SECRET_ACCESS_KEY,required"`
+	StorageBucketName      string `env:"STORAGE_BUCKET_NAME,required"`
 }
 
 func NewAppConfig(params AppConfigParams) *AppConfig {

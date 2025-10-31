@@ -1,0 +1,74 @@
+services:
+  minio-server:
+    image: minio/minio:latest
+    container_name: minio-server
+    restart: always
+
+    # This tells MinIO to serve data from the /data directory
+    # and to host the web console on port 9001.
+    command: server /data --console-address ":9001"
+
+    environment:
+      MINIO_ROOT_USER_FILE: /run/secrets/minio-root-user
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/minio-root-password
+
+    secrets:
+      - minio-root-user
+      - minio-root-password
+
+    ports:
+      - "9000:9000" # API
+      - "9001:9001" # Web Console
+
+    volumes:
+      - minio-data:/data
+
+    healthcheck:
+      # Check if the server is healthy and ready to accept connections
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio-mc:
+    image: minio/mc:latest
+    container_name: minio-mc
+
+    depends_on:
+      minio-server:
+        condition: service_healthy
+
+    environment:
+      - MINIO_HOST=http://minio-server:9000
+
+    secrets:
+      - minio-root-user
+      - minio-root-password
+      - minio-backend-user
+      - minio-backend-password
+
+    entrypoint: >
+      /bin/sh -c "
+      ROOT_USER=$(cat /run/secrets/minio-root-user);
+      ROOT_PWD=$(cat /run/secrets/minio-root-password);
+      BACKEND_USER=$(cat /run/secrets/minio-backend-user);
+      BACKEND_PWD=$(cat /run/secrets/minio-backend-password);
+      /usr/bin/mc alias set localminio $$MINIO_HOST $$ROOT_USER $$ROOT_PWD;
+      mc admin user add localminio $$BACKEND_USER $$BACKEND_PWD;
+      mc mb localminio/touch-grass-scheduler;
+      mc admin policy attach localminio readwrite --user $$BACKEND_USER;
+      "
+
+secrets:
+  minio-root-user:
+    file: ./minio-root-user.txt
+  minio-root-password:
+    file: ./minio-root-password.txt
+  minio-backend-user:
+    file: ./minio-backend-user.txt
+  minio-backend-password:
+    file: ./minio-backend-password.txt
+
+volumes:
+  minio-data:
+    driver: local
