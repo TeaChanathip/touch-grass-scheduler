@@ -1,5 +1,5 @@
 import Image from "next/image"
-import React, { ButtonHTMLAttributes, useRef } from "react"
+import React, { ButtonHTMLAttributes, ChangeEvent, memo, useRef } from "react"
 
 interface ImageUploader extends ButtonHTMLAttributes<HTMLButtonElement> {
     src?: string
@@ -7,11 +7,20 @@ interface ImageUploader extends ButtonHTMLAttributes<HTMLButtonElement> {
     alt?: string
     width: number
     height: number
+    onChangeHandler: (e: ChangeEvent<HTMLInputElement>) => void
 }
 
-export default function ImageUploader(props: ImageUploader) {
-    const { src, fallBackSrc, alt, width, height, className, ...restProps } =
-        props
+const ImageUploader = (props: ImageUploader) => {
+    const {
+        src,
+        fallBackSrc,
+        alt,
+        width,
+        height,
+        onChangeHandler,
+        className,
+        ...restProps
+    } = props
 
     // Hooks
     const inputRef = useRef<HTMLInputElement | null>(null)
@@ -19,11 +28,6 @@ export default function ImageUploader(props: ImageUploader) {
     // Button Handler
     const btnHandler = () => {
         inputRef.current?.click()
-    }
-
-    const inputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        console.log(file)
     }
 
     return (
@@ -37,7 +41,7 @@ export default function ImageUploader(props: ImageUploader) {
                 type="file"
                 accept="image/png, image/jpeg, image/webp"
                 ref={inputRef}
-                onChange={inputChangeHandler}
+                onChange={onChangeHandler}
                 className="hidden"
             />
             <Image
@@ -49,3 +53,5 @@ export default function ImageUploader(props: ImageUploader) {
         </button>
     )
 }
+
+export default memo(ImageUploader)

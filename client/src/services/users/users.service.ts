@@ -18,4 +18,16 @@ export class UsersService {
             updateUserPayload
         )
     }
+
+    async getUploadAvartarSignedURL(): Promise<{
+        url: string
+        object_name: string
+        form_data: { [key: string]: string }
+    }> {
+        return await this.apiService.get<{
+            url: string
+            object_name: string
+            form_data: { [key: string]: string }
+        }>(`${this.url}/avartar-signed-url`)
+    }
 }

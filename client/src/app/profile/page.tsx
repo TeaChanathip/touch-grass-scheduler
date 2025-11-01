@@ -25,8 +25,11 @@ import FormPhone from "../../components/FormPhone"
 import MyButton from "../../components/MyButton"
 import StatusMessage from "../../components/StatusMessage"
 import ImageUploader from "../../components/ImageUploader"
-import { Dispatch, SetStateAction, useState } from "react"
+import { ChangeEvent, Dispatch, SetStateAction, useState } from "react"
 import { isSchoolPersonnel } from "../../utils/isSchoolPersonnel"
+import { ApiService } from "../../services/api.service"
+import { UsersService } from "../../services/users/users.service"
+import convertToWebP from "../../utils/convertToWebP"
 
 export default function ProfilePage() {
     // Hooks
@@ -34,16 +37,72 @@ export default function ProfilePage() {
 
     return (
         <>
+            <AvartarUploader isEditing={isEditing} />
+            <UserProfileForm isEditing={isEditing} setEditing={setEditing} />
+        </>
+    )
+}
+
+function AvartarUploader({ isEditing }: { isEditing: boolean }) {
+    // Hooks
+    const [warningMsg, setWarningMsg] = useState<string | undefined>(undefined)
+
+    // Services
+    const apiService = new ApiService()
+    const usersService = new UsersService(apiService)
+
+    // Handler
+    const onChangeHandler = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) {
+            setWarningMsg("file not found")
+            return
+        }
+
+        // Convert png or jpg to webp
+        try {
+            // Convert image to WebP (might be an error)
+            const webpFile = await convertToWebP(file)
+
+            // Get signed upload(POST) URL from server
+            const {
+                url,
+                object_name: objectName,
+                form_data: formData,
+            } = await usersService.getUploadAvartarSignedURL()
+
+            // Create valid format of the data that will be sent
+            const data = new FormData()
+            for (const key in formData) {
+                data.append(key, formData[key])
+            }
+            data.append("file", webpFile)
+
+            // Post image to Storage
+            await fetch(url, {
+                method: "POST",
+                body: data,
+            })
+
+            // Response back to backend
+        } catch (err) {
+            setWarningMsg(err.message)
+        }
+    }
+
+    return (
+        <div>
             <ImageUploader
                 fallBackSrc="default_avartar.svg"
                 alt="avartar"
                 disabled={!isEditing}
                 width={200}
                 height={200}
+                onChangeHandler={onChangeHandler}
                 className="rounded-full border border-prim-green-800 bg-prim-green-50"
             />
-            <UserProfileForm isEditing={isEditing} setEditing={setEditing} />
-        </>
+            <StatusMessage variant="error" msg={warningMsg} className="" />
+        </div>
     )
 }
 
