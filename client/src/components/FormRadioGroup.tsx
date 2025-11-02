@@ -48,7 +48,7 @@ const FormRadioGroup = ({
                             id={`radio-choice-${label}-${item.value}`}
                             type="radio"
                             value={item.value}
-                            {...register}
+                            {...register(name)}
                             className="size-6"
                         />
                         <label htmlFor={`radio-choice-${label}-${item.value}`}>
