@@ -3,30 +3,36 @@ package authfx
 import (
 	"errors"
 	"net/mail"
+	"time"
 
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
+	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/common"
 	mailfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/mail"
 	"github.com/TeaChanathip/touch-grass-scheduler/server/pkg/models"
 	usersfx "github.com/TeaChanathip/touch-grass-scheduler/server/pkg/users"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 )
 
 type AuthServiceParams struct {
 	fx.In
-	AppConfig   *configfx.AppConfig
-	Logger      *zap.Logger
-	MailService *mailfx.MailService
-	UserService usersfx.UserServiceInterface
+	AppConfig     *configfx.AppConfig
+	Logger        *zap.Logger
+	MailService   *mailfx.MailService
+	UserService   usersfx.UserServiceInterface
+	StorageClient *minio.Client
 }
 
 type AuthService struct {
-	AppConfig   *configfx.AppConfig
-	Logger      *zap.Logger
-	MailService *mailfx.MailService
-	UserService usersfx.UserServiceInterface
+	AppConfig     *configfx.AppConfig
+	Logger        *zap.Logger
+	MailService   *mailfx.MailService
+	UserService   usersfx.UserServiceInterface
+	StorageClient *minio.Client
 }
 
 // Verify interface implementation at compile time
@@ -40,14 +46,15 @@ type AuthServiceInterface interface {
 
 func NewAuthService(params AuthServiceParams) AuthServiceInterface {
 	return &AuthService{
-		AppConfig:   params.AppConfig,
-		Logger:      params.Logger,
-		MailService: params.MailService,
-		UserService: params.UserService,
+		AppConfig:     params.AppConfig,
+		Logger:        params.Logger,
+		MailService:   params.MailService,
+		UserService:   params.UserService,
+		StorageClient: params.StorageClient,
 	}
 }
 
-// ======================== METHODS ========================
+// ======================== BUSINESS LOGIC METHODS ========================
 
 func (service *AuthService) GetRegistrationMail(email string) error {
 	// Check if email already existed
@@ -117,14 +124,21 @@ func (service *AuthService) Register(registrationTokenString string, body *Regis
 	if err := service.UserService.CreateUser(user); err != nil {
 		return nil, "", err
 	}
+	publicUser, err := user.ToPublic(service.StorageClient,
+		service.AppConfig.StorageBucketName,
+		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
+	if err != nil {
+		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
+		return nil, "", common.ErrURLSigning
+	}
 
 	// Generate JWT accessToken
-	accessToken, err := service.generateAccessToken(user)
+	accessToken, err := service.generateAccessToken(user.ID, user.Role)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return user.ToPublic(), accessToken, nil
+	return publicUser, accessToken, nil
 }
 
 func (service *AuthService) Login(body *LoginBody) (*models.PublicUser, string, error) {
@@ -138,13 +152,21 @@ func (service *AuthService) Login(body *LoginBody) (*models.PublicUser, string, 
 		return nil, "", common.ErrInvalidCredentials
 	}
 
+	publicUser, err := user.ToPublic(service.StorageClient,
+		service.AppConfig.StorageBucketName,
+		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
+	if err != nil {
+		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
+		return nil, "", common.ErrURLSigning
+	}
+
 	// Generate JWT accessToken
-	accessToken, err := service.generateAccessToken(user)
+	accessToken, err := service.generateAccessToken(user.ID, user.Role)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return user.ToPublic(), accessToken, nil
+	return publicUser, accessToken, nil
 }
 
 func (service *AuthService) Verify(verificationToken string) error {
@@ -169,10 +191,10 @@ func (service *AuthService) generateRegistrationToken(email string) (string, err
 	return signedToken, nil
 }
 
-func (service *AuthService) generateAccessToken(user *models.User) (string, error) {
+func (service *AuthService) generateAccessToken(userID uuid.UUID, role types.UserRole) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"role":    user.Role,
+		"user_id": userID,
+		"role":    role,
 	}
 
 	signedToken, err := common.GenerateJTWToken(claims,

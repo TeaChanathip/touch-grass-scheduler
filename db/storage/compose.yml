@@ -21,7 +21,7 @@ services:
       - "9001:9001" # Web Console
 
     volumes:
-      - minio-data:/data
+      - minio_data:/data
 
     healthcheck:
       # Check if the server is healthy and ready to accept connections
@@ -47,16 +47,36 @@ services:
       - minio-backend-user
       - minio-backend-password
 
-    entrypoint: >
+    entrypoint: |
       /bin/sh -c "
-      ROOT_USER=$(cat /run/secrets/minio-root-user);
-      ROOT_PWD=$(cat /run/secrets/minio-root-password);
-      BACKEND_USER=$(cat /run/secrets/minio-backend-user);
-      BACKEND_PWD=$(cat /run/secrets/minio-backend-password);
-      /usr/bin/mc alias set localminio $$MINIO_HOST $$ROOT_USER $$ROOT_PWD;
-      mc admin user add localminio $$BACKEND_USER $$BACKEND_PWD;
-      mc mb localminio/touch-grass-scheduler;
+      # Load secrets into shell variables
+      ROOT_USER=$$(cat /run/secrets/minio-root-user);
+      ROOT_PWD=$$(cat /run/secrets/minio-root-password);
+      BACKEND_USER=$$(cat /run/secrets/minio-backend-user);
+      BACKEND_PWD=$$(cat /run/secrets/minio-backend-password);
+
+      echo 'Waiting for MinIO server ($$MINIO_HOST) to be ready...';
+
+      # 1. Wait for the server to be available with a retry loop
+      until mc alias set localminio $$MINIO_HOST $$ROOT_USER $$ROOT_PWD; do
+        echo '... MinIO not ready, retrying in 5 seconds';
+        sleep 5;
+      done
+
+      echo 'MinIO alias ''localminio'' set!';
+
+      # 2. Add admin user (idempotent)
+      # We add '|| true' to prevent the script from exiting if the user already exists
+      mc admin user add localminio $$BACKEND_USER $$BACKEND_PWD || echo 'Backend user already exists.';
+
+      # 3. Create bucket (idempotent)
+      # Check if the bucket exists first. If 'mc ls' fails, the bucket doesn't exist, so create it.
+      mc ls localminio/touch-grass-scheduler || mc mb localminio/touch-grass-scheduler;
+
+      # 4. Attach policy
       mc admin policy attach localminio readwrite --user $$BACKEND_USER;
+
+      echo 'MinIO configuration complete.';
       "
 
 secrets:
@@ -70,5 +90,5 @@ secrets:
     file: ./minio-backend-password.txt
 
 volumes:
-  minio-data:
+  minio_data:
     driver: local

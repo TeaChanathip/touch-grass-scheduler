@@ -52,13 +52,13 @@ func (controller *UsersController) GetMe(ctx *gin.Context) {
 		return
 	}
 
-	user, err := controller.UserService.GetUserByID(userID)
+	user, err := controller.UserService.GetPublicUserByID(userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"user": user.ToPublic()})
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 func (controller *UsersController) GetUserByID(ctx *gin.Context) {
@@ -71,16 +71,16 @@ func (controller *UsersController) GetUserByID(ctx *gin.Context) {
 		return
 	}
 
-	user, err := controller.UserService.GetUserByID(userID)
+	user, err := controller.UserService.GetPublicUserByID(userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"user": user.ToPublic()})
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-func (controller *UsersController) UpdateUser(ctx *gin.Context) {
+func (controller *UsersController) UpdateUserByID(ctx *gin.Context) {
 	// Get userID Context that set by AuthMiddleware
 	_userID, _ := ctx.Get("user_id")
 	userID, err := uuid.Parse(_userID.(string))
@@ -100,10 +100,10 @@ func (controller *UsersController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"user": user.ToPublic()})
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-func (controller *UsersController) GetUploadAvartarSignedURL(ctx *gin.Context) {
+func (controller *UsersController) GetUploadAvatarSignedURL(ctx *gin.Context) {
 	// Get userID Context that set by AuthMiddleware
 	_userID, _ := ctx.Get("user_id")
 	userID, err := uuid.Parse(_userID.(string))
@@ -113,7 +113,7 @@ func (controller *UsersController) GetUploadAvartarSignedURL(ctx *gin.Context) {
 		return
 	}
 
-	response, err := controller.UserService.GetUploadAvartarSignedURL(userID)
+	response, err := controller.UserService.GetUploadAvatarSignedURL(userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
@@ -122,5 +122,21 @@ func (controller *UsersController) GetUploadAvartarSignedURL(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-// func (controller *UsersController) DeleteUser(ctx *gin.Context) {
-// }
+func (controller *UsersController) HandleAvatarUpload(ctx *gin.Context) {
+	// Get userID Context that set by AuthMiddleware
+	_userID, _ := ctx.Get("user_id")
+	userID, err := uuid.Parse(_userID.(string))
+	if err != nil {
+		controller.Logger.Debug("Failed to parse userID", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+		return
+	}
+
+	user, err := controller.UserService.HandleAvatarUpload(userID)
+	if err != nil {
+		common.HandleBusinessLogicErr(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"user": user})
+}

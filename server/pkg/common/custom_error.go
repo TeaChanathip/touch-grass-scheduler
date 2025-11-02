@@ -25,6 +25,7 @@ var (
 	ErrVariableParsing = CustomError{StatusCode: http.StatusInternalServerError, Message: "variable parsing failed"}
 	ErrUUIDGenerating  = CustomError{StatusCode: http.StatusInternalServerError, Message: "UUID generation failed"}
 	ErrStorage         = CustomError{StatusCode: http.StatusInternalServerError, Message: "storage error"}
+	ErrURLSigning      = CustomError{StatusCode: http.StatusInternalServerError, Message: "signing url failed"}
 
 	// 400 Bad Request
 	ErrDuplicatedEmail          = CustomError{StatusCode: http.StatusBadRequest, Message: "email already exists"}
@@ -35,7 +36,9 @@ var (
 	ErrInvalidCredentials = CustomError{StatusCode: http.StatusUnauthorized, Message: "invalid credentials"}
 
 	// 404 Not Found
-	ErrUserNotFound = CustomError{StatusCode: http.StatusNotFound, Message: "user not found"}
+	ErrUserNotFound          = CustomError{StatusCode: http.StatusNotFound, Message: "user not found"}
+	ErrStorageObjectNotFound = CustomError{StatusCode: http.StatusNotFound, Message: "object not found"}
+	ErrPendingUploadNotFound = CustomError{StatusCode: http.StatusNotFound, Message: "pending upload not found"}
 )
 
 // ======================== HELPER FUNCTIONS ========================

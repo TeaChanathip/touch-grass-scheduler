@@ -3,5 +3,5 @@ package types
 type UploadType BaseStringEnum
 
 const (
-	UploadTypeAvartar UploadType = "avartar"
+	UploadTypeAvatar UploadType = "avatar"
 )

@@ -1,4 +1,4 @@
-CREATE TYPE IF NOT EXISTS gender AS ENUM('male', 'female', 'other', 'prefer_not_to_say');
+CREATE TYPE gender AS ENUM('male', 'female', 'other', 'prefer_not_to_say');
 CREATE TYPE role AS ENUM('student', 'teacher', 'guardian', 'admin');
 
 -- Entities
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "users" (
     "gender" gender NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "password" VARCHAR(60) NOT NULL,
-    "avatar_url" VARCHAR(512) DEFAULT NULL,
+    "avatar_key" VARCHAR(128) DEFAULT NULL, -- AKA. object name in the Storage
     "school_num" VARCHAR(16) DEFAULT NULL,
     UNIQUE("email")
 );
@@ -100,13 +100,11 @@ CREATE TABLE IF NOT EXISTS "assignments" (
 );
 
 -- For validating the files that is uploaded to object storage 
-CREATE TYPE upload_status as ENUM('pending', 'completed');
-CREATE TYPE upload_type as ENUM('avartar');
+CREATE TYPE upload_type as ENUM('avatar');
 
-CREATE TABLE IF NOT EXISTS "uploads" (
-    "object_name" VARCHAR(128) NOT NULL,
+CREATE TABLE IF NOT EXISTS "pending_uploads" (
+    "object_key" VARCHAR(128) NOT NULL,
     "user_id" UUID NOT NULL REFERENCES "users"("id"),
     "type" upload_type NOT NULL,
-    "status" upload_status NOT NULL,
-    PRIMARY KEY ("object_name", "user_id")
+    PRIMARY KEY ("object_key", "user_id")
 );

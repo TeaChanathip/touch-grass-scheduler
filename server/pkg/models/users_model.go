@@ -1,8 +1,12 @@
 package models
 
 import (
+	"context"
+	"time"
+
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
 	"github.com/google/uuid"
+	"github.com/minio/minio-go/v7"
 )
 
 type User struct {
@@ -15,7 +19,7 @@ type User struct {
 	Gender     types.UserGender `gorm:"type:gender;not null" json:"gender"`
 	Email      string           `gorm:"type:varchar(255);not null;unique" json:"email"`
 	Password   string           `gorm:"type:varchar(60);not null" json:"password"`
-	AvatarURL  *string          `gorm:"type:varchar(512);null;default:null" json:"avartar_url"`
+	AvatarKey  *string          `gorm:"type:varchar(512);null;default:null" json:"avatar_key"`
 	SchoolNum  *string          `gorm:"type:varchar(16);null;default:null" json:"school_num"`
 }
 
@@ -29,12 +33,25 @@ type PublicUser struct {
 	Phone      string           `json:"phone"`
 	Gender     types.UserGender `json:"gender"`
 	Email      string           `json:"email"`
-	AvatarURL  *string          `json:"avartar_url"`
+	AvartarURL *string          `json:"avatar_url"`
 	SchoolNum  *string          `json:"school_num"`
 }
 
-func (u *User) ToPublic() *PublicUser {
-	return &PublicUser{
+func (u *User) ToPublic(storageClient *minio.Client, bucketName string, expires time.Duration) (*PublicUser, error) {
+	var avatarURL *string = nil
+
+	if u.AvatarKey != nil {
+		ctx := context.Background()
+		signedURL, err := storageClient.PresignedGetObject(ctx, bucketName, *u.AvatarKey, expires, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		signedURLStr := signedURL.String()
+		avatarURL = &signedURLStr
+	}
+
+	publicUser := &PublicUser{
 		ID:         u.ID,
 		Role:       u.Role,
 		FirstName:  u.FirstName,
@@ -43,7 +60,9 @@ func (u *User) ToPublic() *PublicUser {
 		Phone:      u.Phone,
 		Gender:     u.Gender,
 		Email:      u.Email,
-		AvatarURL:  u.AvatarURL,
+		AvartarURL: avatarURL,
 		SchoolNum:  u.SchoolNum,
 	}
+
+	return publicUser, nil
 }

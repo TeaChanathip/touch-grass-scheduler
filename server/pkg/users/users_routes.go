@@ -43,22 +43,26 @@ func (routes *UsersRoutes) Setup() {
 		routes.AuthMiddleware.Handler(),
 		routes.UsersController.GetMe)
 
-	routes.Router.GET(string(endpoints.GetUserWithIDV1)+"/:id",
+	routes.Router.GET(string(endpoints.GetUserByIDV1)+"/:id",
 		routes.AuthMiddleware.HandlerWithRole(types.UserRoleAdmin),
 		routes.UsersController.GetUserByID)
 
-	routes.Router.PUT(string(endpoints.UpdateUserV1),
+	routes.Router.PUT(string(endpoints.UpdateUserByIDV1),
 		routes.AuthMiddleware.HandlerWithRole(types.UserRoleStudent,
 			types.UserRoleTeacher,
 			types.UserRoleGuardian),
 		routes.RequestBodyValidator.Handler("update-user", UpdateUserBody{}),
-		routes.UsersController.UpdateUser)
+		routes.UsersController.UpdateUserByID)
 
-	routes.Router.GET(string(endpoints.GetUploadAvartarSignedURL),
+	routes.Router.GET(string(endpoints.GetUploadAvatarSignedURLV1),
 		routes.AuthMiddleware.HandlerWithRole(types.UserRoleStudent,
 			types.UserRoleTeacher,
 			types.UserRoleGuardian),
-		routes.UsersController.GetUploadAvartarSignedURL)
+		routes.UsersController.GetUploadAvatarSignedURL)
 
-	// usersGroup.DELETE("users/:id")
+	routes.Router.POST(string(endpoints.HandleAvatarUploadV1),
+		routes.AuthMiddleware.HandlerWithRole(types.UserRoleStudent,
+			types.UserRoleTeacher,
+			types.UserRoleGuardian),
+		routes.UsersController.HandleAvatarUpload)
 }
