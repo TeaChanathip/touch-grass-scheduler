@@ -81,13 +81,13 @@ services:
 
 secrets:
   minio-root-user:
-    file: ./minio-root-user.txt
+    file: ./secrets/minio-root-user.txt
   minio-root-password:
-    file: ./minio-root-password.txt
+    file: ./secrets/minio-root-password.txt
   minio-backend-user:
-    file: ./minio-backend-user.txt
+    file: ./secrets/minio-backend-user.txt
   minio-backend-password:
-    file: ./minio-backend-password.txt
+    file: ./secrets/minio-backend-password.txt
 
 volumes:
   minio_data:

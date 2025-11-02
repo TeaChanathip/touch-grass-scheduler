@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18
+    image: pgcron:18
     container_name: postgres
     restart: always
     ports:
@@ -12,6 +12,9 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/00-init.sql
+    command: |
+      postgres -c shared_preload_libraries=pg_cron 
+      -c cron.database_name=db
 
   pgadmin:
     image: dpage/pgadmin4

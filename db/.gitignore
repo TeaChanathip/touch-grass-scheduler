@@ -1,4 +1,2 @@
-minio-root-user.txt
-minio-root-password.txt
-minio-backend-user.txt
-minio-backend-password.txt
+**/secrets/*.txt
+!**/secrets/*.example.txt
