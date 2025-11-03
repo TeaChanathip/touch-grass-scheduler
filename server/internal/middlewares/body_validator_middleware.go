@@ -82,7 +82,7 @@ func getValidationMessage(fe validator.FieldError) string {
 	case "alpha":
 		return fmt.Sprintf("%s must contain only letters", field)
 	case "e164":
-		return "Please provide a valid phone number (e.g., +1234567890)"
+		return "Please provide a valid phone number in e164 format"
 	case "number":
 		return fmt.Sprintf("%s must be a valid number", field)
 	case "oneof":

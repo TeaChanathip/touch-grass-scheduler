@@ -25,7 +25,7 @@ export default function StatusMessage(props: StatusMessageProps) {
                 visibility: msg ? "visible" : "hidden",
             }}
         >
-            {msg ?? <>&nbsp;</>}
+            {msg ? msg : <>&nbsp;</>}
         </p>
     )
 }

@@ -21,37 +21,53 @@ import FormStringInput from "../../components/FormStringInput"
 import FormSelect from "../../components/FormSelect"
 import { genderOptions } from "../../constants/options"
 import { CountryCodeSchema } from "../../schemas/CountryCodeSchema"
-import parsePhoneNumberFromString, { PhoneNumber } from "libphonenumber-js"
+import parsePhoneNumberFromString, {
+    isValidPhoneNumber,
+    PhoneNumber,
+} from "libphonenumber-js"
 import FormPhone from "../../components/FormPhone"
 import MyButton from "../../components/MyButton"
 import StatusMessage from "../../components/StatusMessage"
 import ImageUploader from "../../components/ImageUploader"
-import { ChangeEvent, Dispatch, SetStateAction, useState } from "react"
+import { ChangeEvent, Dispatch, memo, SetStateAction, useState } from "react"
 import { isSchoolPersonnel } from "../../utils/isSchoolPersonnel"
 import { ApiService } from "../../services/api.service"
 import { UsersService } from "../../services/users/users.service"
 import convertToWebP from "../../utils/convertToWebP"
 
 export default function ProfilePage() {
+    // Store
+    const userErrMsg = useAppSelector(selectUserErrMsg)
+
     // Hooks
     const [isEditing, setEditing] = useState(false)
+    const [warningMsg, setWarningMsg] = useState<string | undefined>(userErrMsg)
 
     return (
         <>
-            <AvatarUploader isEditing={isEditing} />
-            <UserProfileForm isEditing={isEditing} setEditing={setEditing} />
+            <AvatarUploader
+                isEditing={isEditing}
+                setWarningMsg={setWarningMsg}
+            />
+            <UserProfileForm
+                isEditing={isEditing}
+                setEditing={setEditing}
+                warningMsg={warningMsg}
+            />
         </>
     )
 }
 
-function AvatarUploader({ isEditing }: { isEditing: boolean }) {
+function AvatarUploader({
+    isEditing,
+    setWarningMsg,
+}: {
+    isEditing: boolean
+    setWarningMsg: Dispatch<SetStateAction<string | undefined>>
+}) {
     // Store
     const dispatch = useAppDispatch()
     const user = useAppSelector(selectUser)
-    const userErrMsg = useAppSelector(selectUserErrMsg)
-
-    // Hooks
-    const [warningMsg, setWarningMsg] = useState<string | undefined>(userErrMsg)
 
     // Services
     const apiService = new ApiService()
@@ -104,57 +120,61 @@ function AvatarUploader({ isEditing }: { isEditing: boolean }) {
     }
 
     return (
-        <div>
-            <ImageUploader
-                fallBackSrc="default_avatar.svg"
-                src={user?.avatar_url}
-                alt="avatar"
-                disabled={!isEditing}
-                width={200}
-                height={200}
-                onChangeHandler={onChangeHandler}
-                className="rounded-full border border-prim-green-800 bg-prim-green-50"
-            />
-            <StatusMessage variant="error" msg={warningMsg} className="" />
-        </div>
+        <ImageUploader
+            fallBackSrc="default_avatar.svg"
+            src={user?.avatar_url}
+            alt="avatar"
+            disabled={!isEditing}
+            width={200}
+            height={200}
+            onChangeHandler={onChangeHandler}
+            className="rounded-full border border-prim-green-800 bg-prim-green-50"
+        />
     )
 }
 
 // Form Schema
-const schema = z.object({
-    first_name: z
-        .string()
-        .nonempty("Required")
-        .max(128, "Too long")
-        .regex(/^[a-zA-Z]+$/, "Letters only"),
-    middle_name: z
-        .string()
-        .regex(/^[a-zA-Z]+$/, "Letters only")
-        .max(128, "Too long")
-        .or(z.literal("")),
-    last_name: z
-        .string()
-        .regex(/^[a-zA-Z]+$/, "Letters only")
-        .max(128, "Too long")
-        .or(z.literal("")),
-    gender: z.enum(UserGender, {
-        error: () => ({ message: "Select your gender" }),
-    }),
-    country_code: CountryCodeSchema,
-    phone: z.string().regex(/^\d{7,15}$/),
+const schema = z
+    .object({
+        first_name: z
+            .string()
+            .nonempty("Required")
+            .max(128, "Too long")
+            .regex(/^[a-zA-Z]+$/, "Letters only"),
+        middle_name: z
+            .string()
+            .regex(/^[a-zA-Z]+$/, "Letters only")
+            .max(128, "Too long")
+            .or(z.literal("")),
+        last_name: z
+            .string()
+            .regex(/^[a-zA-Z]+$/, "Letters only")
+            .max(128, "Too long")
+            .or(z.literal("")),
+        gender: z.enum(UserGender, {
+            error: () => ({ message: "Select your gender" }),
+        }),
+        country_code: CountryCodeSchema,
+        phone: z.string().regex(/^\d{7,15}$/),
 
-    // Fixed fields
-    email: z.email(),
-    role: z.string(),
-    school_num: z.string().optional(),
-})
+        // Fixed fields
+        email: z.email(),
+        role: z.string(),
+        school_num: z.string().nullable(),
+    })
+    .refine((data) => isValidPhoneNumber(data.phone, data.country_code), {
+        message: "Invalid phone number",
+        path: ["phone"],
+    })
 
 function UserProfileForm({
     isEditing,
     setEditing,
+    warningMsg,
 }: {
     isEditing: boolean
     setEditing: Dispatch<SetStateAction<boolean>>
+    warningMsg?: string
 }) {
     // Store
     const user = useAppSelector(selectUser) as User
@@ -223,7 +243,11 @@ function UserProfileForm({
                     hideMsg={!isEditing}
                 />
                 <UnmodifiedFieldsGroup isEditing={isEditing} />
-                <ButtonSection isEditing={isEditing} setEditing={setEditing} />
+                <ButtonSection
+                    isEditing={isEditing}
+                    setEditing={setEditing}
+                    warningMsg={warningMsg}
+                />
             </form>
         </FormProvider>
     )
@@ -267,13 +291,14 @@ function UnmodifiedFieldsGroup({ isEditing }: { isEditing: boolean }) {
 function ButtonSection({
     isEditing,
     setEditing,
+    warningMsg,
 }: {
     isEditing: boolean
     setEditing: Dispatch<SetStateAction<boolean>>
+    warningMsg?: string
 }) {
     // Store
     const dispatch = useAppDispatch()
-    const userErrMsg = useAppSelector(selectUserErrMsg)
 
     // Form Context
     const {
@@ -331,7 +356,7 @@ function ButtonSection({
     return (
         <section className="flex flex-col items-center">
             <StatusMessage
-                msg={userErrMsg}
+                msg={warningMsg}
                 variant="error"
                 className="text-2xl bt-3"
             />
@@ -368,6 +393,3 @@ function ButtonSection({
         </section>
     )
 }
-
-// TODO: Complete image uploader
-// TODO: Update the logic for showing response message (must include the error from uploading an image)

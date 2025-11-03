@@ -3,7 +3,7 @@
 import Image from "next/image"
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded"
 import Link from "next/link"
-import React, { memo, useEffect, useState } from "react"
+import React, { memo, useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useAppDispatch, useAppSelector } from "../store/hooks"
 import {
@@ -14,6 +14,7 @@ import {
 } from "../store/features/user/userSlice"
 import { UserRole } from "../interfaces/User.interface"
 import MyButton from "../components/MyButton"
+import useClickOutside from "../hooks/useClickOutside"
 
 interface Path {
     title: string
@@ -32,6 +33,7 @@ export default function Navbar() {
     // Hooks
     const pathname = usePathname()
     const [isSidebarShown, setSidebarShown] = useState(false)
+    const navbarRef = useRef(null)
 
     useEffect(() => {
         dispatch(userAutoLogin())
@@ -41,8 +43,11 @@ export default function Navbar() {
         setSidebarShown(false)
     }, [pathname])
 
+    // Collapse navbar when click outside
+    useClickOutside(navbarRef, () => setSidebarShown(false))
+
     return (
-        <>
+        <div ref={navbarRef}>
             <header className="sticky top-0 h-14 bg-prim-green-800 flex items-center justify-between px-2.5">
                 <AppIcon />
                 <button
@@ -57,7 +62,7 @@ export default function Navbar() {
                 </button>
             </header>
             <Sidebar isSidebarShown={isSidebarShown} />
-        </>
+        </div>
     )
 }
 
@@ -110,6 +115,7 @@ const UserCard = memo(function UserCard() {
 
     // Hooks
     const router = useRouter()
+    const pathname = usePathname()
 
     // Button Handlers
     const editBtnHandler = () => {
@@ -139,10 +145,11 @@ const UserCard = memo(function UserCard() {
                 <span className="w-full flex flex-wrap justify-center gap-2">
                     <MyButton
                         variant="positive"
-                        className="text-sm md:text-xl w-20 md:w-28"
+                        disabled={pathname === "/profile"}
                         onClick={() => {
                             editBtnHandler()
                         }}
+                        className="text-sm md:text-xl w-20 md:w-28"
                     >
                         Edit
                     </MyButton>
