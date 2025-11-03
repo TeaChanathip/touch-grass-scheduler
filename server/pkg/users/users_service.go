@@ -67,7 +67,7 @@ func (service *UserService) GetPublicUserByID(userID uuid.UUID) (*models.PublicU
 
 	publicUser, err := user.ToPublic(service.StorageClient,
 		service.AppConfig.StorageBucketName,
-		time.Duration(time.Hour*time.Duration(service.AppConfig.JWTExpiresIn)))
+		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (service *UserService) UpdateUserByID(userID uuid.UUID, body *UpdateUserBod
 
 	publicUser, err := updatedUser.ToPublic(service.StorageClient,
 		service.AppConfig.StorageBucketName,
-		time.Duration(time.Hour*time.Duration(service.AppConfig.JWTExpiresIn)))
+		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 	if err != nil {
 		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
 		return nil, err
@@ -154,24 +154,24 @@ func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[stri
 	}
 
 	// Create Upload entity in DB
-	upload := &models.PendingUpload{
+	pendingUpload := &models.PendingUpload{
 		ObjectKey: objectKey,
 		UserID:    userID,
 		Type:      types.UploadTypeAvatar,
+		ExpireAt:  time.Now().Add(time.Hour * 24),
 	}
 
-	result := service.DB.Create(upload)
+	result := service.DB.Create(pendingUpload)
 	if result.Error != nil {
-		service.Logger.Error("Database error while creating user",
+		service.Logger.Error("Database error while creating pending_upload",
 			zap.Error(result.Error),
 		)
 		return nil, common.ErrDatabase
 	}
 
 	response := map[string]any{
-		"url":        url.String(),
-		"form_data":  formData,
-		"object_key": objectKey,
+		"url":       url.String(),
+		"form_data": formData,
 	}
 
 	return response, nil
@@ -297,7 +297,7 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*models.Public
 
 	publicUser, err := updatedUser.ToPublic(service.StorageClient,
 		service.AppConfig.StorageBucketName,
-		time.Duration(time.Hour*time.Duration(service.AppConfig.JWTExpiresIn)))
+		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 	if err != nil {
 		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
 		return nil, err
@@ -416,11 +416,3 @@ func (service *UserService) generateAvatarUploadURL(objectKey string) (*url.URL,
 
 	return url, formData, nil
 }
-
-// TODO: Avatar Upload
-// 1. Add file size limit at the client
-// 2. Add cropping feature at the client
-// [Done] 3. Add upload policy of file size limit at the backend
-// 4. (choice 1) Remove old pending upload request in DB when there's a new request
-// 4. (choice 2) Add CORN job to remove old pending upload requests in DB
-// 5. Add CORN job to remove pending upload objects in Storage that are too old
