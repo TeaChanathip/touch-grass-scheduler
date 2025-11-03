@@ -11,7 +11,8 @@ services:
       POSTGRES_DB: db
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/00-init.sql
+      - ./sqls/000_init.sql:/docker-entrypoint-initdb.d/000_init.sql
+      - ./sqls/001_cron.sql:/docker-entrypoint-initdb.d/001_cron.sql
     command: |
       postgres -c shared_preload_libraries=pg_cron 
       -c cron.database_name=db

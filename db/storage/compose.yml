@@ -76,6 +76,9 @@ services:
       # 4. Attach policy
       mc admin policy attach localminio readwrite --user $$BACKEND_USER;
 
+      # 5. Config lifecycle
+      mc ilm rule add --prefix=pending/ --expire-days=2  localminio/touch-grass-scheduler;
+
       echo 'MinIO configuration complete.';
       "
 

@@ -106,5 +106,6 @@ CREATE TABLE IF NOT EXISTS "pending_uploads" (
     "object_key" VARCHAR(128) NOT NULL,
     "user_id" UUID NOT NULL REFERENCES "users"("id"),
     "type" upload_type NOT NULL,
+    "expire_at" TIMESTAMPTZ NOT NULL,
     PRIMARY KEY ("object_key", "user_id")
 );
