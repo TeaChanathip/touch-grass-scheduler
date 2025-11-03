@@ -28,4 +28,10 @@ export class UsersService {
             form_data: { [key: string]: string }
         }>(`${this.url}/avatar-signed-url`)
     }
+
+    async handleAvatarUpload(): Promise<{ user: User }> {
+        return await this.apiService.post<undefined, { user: User }>(
+            `${this.url}/avatar`
+        )
+    }
 }

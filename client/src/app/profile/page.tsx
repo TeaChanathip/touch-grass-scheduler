@@ -10,6 +10,7 @@ import {
 import {
     selectUser,
     selectUserErrMsg,
+    userHandleAvatarUpload,
     userUpdateProfile,
 } from "../../store/features/user/userSlice"
 import { useAppDispatch, useAppSelector } from "../../store/hooks"
@@ -44,8 +45,13 @@ export default function ProfilePage() {
 }
 
 function AvatarUploader({ isEditing }: { isEditing: boolean }) {
+    // Store
+    const dispatch = useAppDispatch()
+    const user = useAppSelector(selectUser)
+    const userErrMsg = useAppSelector(selectUserErrMsg)
+
     // Hooks
-    const [warningMsg, setWarningMsg] = useState<string | undefined>(undefined)
+    const [warningMsg, setWarningMsg] = useState<string | undefined>(userErrMsg)
 
     // Services
     const apiService = new ApiService()
@@ -90,6 +96,7 @@ function AvatarUploader({ isEditing }: { isEditing: boolean }) {
             })
 
             // Response back to backend
+            await dispatch(userHandleAvatarUpload())
         } catch (err) {
             setWarningMsg(err.message)
         }
@@ -99,6 +106,7 @@ function AvatarUploader({ isEditing }: { isEditing: boolean }) {
         <div>
             <ImageUploader
                 fallBackSrc="default_avatar.svg"
+                src={user?.avatar_url}
                 alt="avatar"
                 disabled={!isEditing}
                 width={200}

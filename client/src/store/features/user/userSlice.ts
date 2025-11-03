@@ -274,6 +274,49 @@ export const userSlice = createAppSlice({
                 },
             }
         ),
+        userHandleAvatarUpload: create.asyncThunk(
+            async (_, { rejectWithValue }) => {
+                try {
+                    const { user } = await usersService.handleAvatarUpload()
+                    return user
+                } catch (err) {
+                    if (isApiError(err)) {
+                        return rejectWithValue({
+                            status: err.status,
+                            message: err.message,
+                        })
+                    }
+                    throw err
+                }
+            },
+            {
+                pending: (state) => {
+                    state.status = "loading"
+                },
+                fulfilled: (state, action) => {
+                    state.status = "authenticated"
+                    state.user = action.payload
+                    state.errMsg = undefined
+                },
+                rejected: (state, action) => {
+                    const payload = action.payload as
+                        | ApiErrorResponse
+                        | undefined
+
+                    // Other errors
+                    if (payload === undefined) {
+                        state.status = "error"
+                        state.user = undefined
+                        state.errMsg = action.error.message
+                        return
+                    }
+
+                    // ApiError
+                    state.status = "authenticated"
+                    state.errMsg = payload.message
+                },
+            }
+        ),
     }),
     selectors: {
         selectUser: (state) => state.user,
@@ -289,6 +332,7 @@ export const {
     userLogout,
     userAutoLogin,
     userUpdateProfile,
+    userHandleAvatarUpload,
 } = userSlice.actions
 
 // Selectors

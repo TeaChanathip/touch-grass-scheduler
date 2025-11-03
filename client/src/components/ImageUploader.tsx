@@ -49,6 +49,7 @@ const ImageUploader = (props: ImageUploader) => {
                 alt={alt ?? "upload image"}
                 width={width}
                 height={height}
+                className={className}
             />
         </button>
     )
