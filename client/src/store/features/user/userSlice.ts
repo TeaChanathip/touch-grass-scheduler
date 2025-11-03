@@ -277,8 +277,9 @@ export const userSlice = createAppSlice({
         userHandleAvatarUpload: create.asyncThunk(
             async (_, { rejectWithValue }) => {
                 try {
-                    const { user } = await usersService.handleAvatarUpload()
-                    return user
+                    const { avatar_url } =
+                        await usersService.handleAvatarUpload()
+                    return avatar_url
                 } catch (err) {
                     if (isApiError(err)) {
                         return rejectWithValue({
@@ -295,7 +296,7 @@ export const userSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     state.status = "authenticated"
-                    state.user = action.payload
+                    state.user!.avatar_url = action.payload
                     state.errMsg = undefined
                 },
                 rejected: (state, action) => {

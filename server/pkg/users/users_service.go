@@ -41,7 +41,7 @@ type UserServiceInterface interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(userID uuid.UUID) (*models.User, error)
-	HandleAvatarUpload(userID uuid.UUID) (*models.PublicUser, error)
+	HandleAvatarUpload(userID uuid.UUID) (*url.URL, error)
 	generateAvatarUploadURL(objectName string) (*url.URL, map[string]string, error)
 }
 
@@ -189,7 +189,7 @@ func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[stri
 	return response, nil
 }
 
-func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*models.PublicUser, error) {
+func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, error) {
 	// Query pending upload of user's avatar
 	var pendingUpload *models.PendingUpload
 	result := service.DB.Where("user_id = ? AND type = 'avatar'", userID.String()).First(&pendingUpload)
@@ -307,15 +307,18 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*models.Public
 		return nil, err
 	}
 
-	publicUser, err := updatedUser.ToPublic(service.StorageClient,
+	ctx = context.Background()
+	signedURL, err := service.StorageClient.PresignedGetObject(ctx,
 		service.AppConfig.StorageBucketName,
-		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
+		pendingUpload.ObjectKey,
+		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn),
+		nil)
 	if err != nil {
 		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
-		return nil, err
+		return nil, common.ErrStorage
 	}
 
-	return publicUser, nil
+	return signedURL, nil
 }
 
 // ======================== HELPER METHODS ========================

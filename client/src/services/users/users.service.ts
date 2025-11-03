@@ -29,8 +29,8 @@ export class UsersService {
         }>(`${this.url}/avatar-signed-url`)
     }
 
-    async handleAvatarUpload(): Promise<{ user: User }> {
-        return await this.apiService.post<undefined, { user: User }>(
+    async handleAvatarUpload(): Promise<{ avatar_url: string }> {
+        return await this.apiService.post<undefined, { avatar_url: string }>(
             `${this.url}/avatar`
         )
     }

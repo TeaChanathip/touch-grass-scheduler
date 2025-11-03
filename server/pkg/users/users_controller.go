@@ -132,11 +132,11 @@ func (controller *UsersController) HandleAvatarUpload(ctx *gin.Context) {
 		return
 	}
 
-	user, err := controller.UserService.HandleAvatarUpload(userID)
+	url, err := controller.UserService.HandleAvatarUpload(userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"user": user})
+	ctx.JSON(http.StatusCreated, gin.H{"avatar_url": url.String()})
 }

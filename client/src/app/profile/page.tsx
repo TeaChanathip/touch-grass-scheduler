@@ -71,6 +71,7 @@ function AvatarUploader({ isEditing }: { isEditing: boolean }) {
             const webpFile = await convertToWebP(file, {
                 square: true,
                 maxWidth: 200,
+                quality: 0.9,
             })
 
             // File size limit at 2 MB
