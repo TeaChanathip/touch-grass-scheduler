@@ -146,6 +146,7 @@ const UserCard = memo(function UserCard() {
                     <MyButton
                         variant="positive"
                         disabled={pathname === "/profile"}
+                        hidden={user.role === "admin"}
                         onClick={() => {
                             editBtnHandler()
                         }}
