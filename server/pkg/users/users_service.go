@@ -137,6 +137,18 @@ func (service *UserService) UpdateUserByID(userID uuid.UUID, body *UpdateUserBod
 }
 
 func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[string]any, error) {
+	var result *gorm.DB
+
+	// Delete old pending uploads (if exists)
+	result = service.DB.Where("user_id = ? AND type = 'avatar'", userID).
+		Delete(models.PendingUpload{})
+	if result.Error != nil {
+		service.Logger.Error("Database error while deleting old pending upload",
+			zap.Error(result.Error),
+		)
+		return nil, common.ErrDatabase
+	}
+
 	// Generate ID that will be used in object name
 	objectID, err := uuid.NewRandom()
 	if err != nil {
@@ -161,7 +173,7 @@ func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[stri
 		ExpireAt:  time.Now().Add(time.Hour * 24),
 	}
 
-	result := service.DB.Create(pendingUpload)
+	result = service.DB.Create(pendingUpload)
 	if result.Error != nil {
 		service.Logger.Error("Database error while creating pending_upload",
 			zap.Error(result.Error),
