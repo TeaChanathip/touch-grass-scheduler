@@ -19,14 +19,12 @@ export class UsersService {
         )
     }
 
-    async getUploadAvartarSignedURL(): Promise<{
+    async getUploadAvatarSignedURL(): Promise<{
         url: string
-        object_name: string
         form_data: { [key: string]: string }
     }> {
         return await this.apiService.get<{
             url: string
-            object_name: string
             form_data: { [key: string]: string }
         }>(`${this.url}/avatar-signed-url`)
     }

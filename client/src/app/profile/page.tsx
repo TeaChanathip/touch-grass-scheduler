@@ -37,13 +37,13 @@ export default function ProfilePage() {
 
     return (
         <>
-            <AvartarUploader isEditing={isEditing} />
+            <AvatarUploader isEditing={isEditing} />
             <UserProfileForm isEditing={isEditing} setEditing={setEditing} />
         </>
     )
 }
 
-function AvartarUploader({ isEditing }: { isEditing: boolean }) {
+function AvatarUploader({ isEditing }: { isEditing: boolean }) {
     // Hooks
     const [warningMsg, setWarningMsg] = useState<string | undefined>(undefined)
 
@@ -62,14 +62,19 @@ function AvartarUploader({ isEditing }: { isEditing: boolean }) {
         // Convert png or jpg to webp
         try {
             // Convert image to WebP (might be an error)
-            const webpFile = await convertToWebP(file)
+            const webpFile = await convertToWebP(file, {
+                square: true,
+                maxWidth: 200,
+            })
+
+            // File size limit at 2 MB
+            if (webpFile.size > 2097152) {
+                throw new Error("file too large")
+            }
 
             // Get signed upload(POST) URL from server
-            const {
-                url,
-                object_name: objectName,
-                form_data: formData,
-            } = await usersService.getUploadAvartarSignedURL()
+            const { url, form_data: formData } =
+                await usersService.getUploadAvatarSignedURL()
 
             // Create valid format of the data that will be sent
             const data = new FormData()
@@ -93,8 +98,8 @@ function AvartarUploader({ isEditing }: { isEditing: boolean }) {
     return (
         <div>
             <ImageUploader
-                fallBackSrc="default_avartar.svg"
-                alt="avartar"
+                fallBackSrc="default_avatar.svg"
+                alt="avatar"
                 disabled={!isEditing}
                 width={200}
                 height={200}

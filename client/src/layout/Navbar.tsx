@@ -126,8 +126,8 @@ const UserCard = memo(function UserCard() {
     return (
         <div className="mt-8 mx-8 px-4 py-3 flex flex-row items-center bg-prim-green-100 rounded-xl text-2xl drop-shadow-md">
             <Image
-                src={user.avatar_url ?? "default_avartar.svg"}
-                alt="avartar"
+                src={user.avatar_url ?? "default_avatar.svg"}
+                alt="avatar"
                 width={120}
                 height={120}
                 className="size-[120px] rounded-full"
