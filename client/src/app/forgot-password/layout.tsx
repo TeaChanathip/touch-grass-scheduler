@@ -2,7 +2,7 @@ import React from "react"
 import PageLayout from "../../layout/PageLayout"
 import GuestRoute from "../../layout/GuestRoute"
 
-export default function ForgotPasswordLayout({
+export default function ForgotPwdLayout({
     children,
 }: {
     children: React.ReactNode

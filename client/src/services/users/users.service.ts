@@ -1,5 +1,5 @@
 import { UpdateUserPayload, User } from "../../interfaces/User.interface"
-import { ApiService } from "../api.service"
+import { apiService, ApiService } from "../api.service"
 
 export class UsersService {
     constructor(private readonly apiService: ApiService) {}
@@ -35,3 +35,5 @@ export class UsersService {
         )
     }
 }
+
+export const usersService = new UsersService(apiService)

@@ -3,14 +3,10 @@ import {
     RegisterPayload,
 } from "../../../interfaces/Auth.interface"
 import { UpdateUserPayload, User } from "../../../interfaces/User.interface"
-import {
-    ApiErrorResponse,
-    ApiService,
-    isApiError,
-} from "../../../services/api.service"
-import { AuthService } from "../../../services/auth/auth.service"
+import { ApiErrorResponse, isApiError } from "../../../services/api.service"
+import { authService } from "../../../services/auth/auth.service"
 import { createAppSlice } from "../../createAppSlice"
-import { UsersService } from "../../../services/users/users.service"
+import { usersService } from "../../../services/users/users.service"
 
 export interface UserSliceState {
     user?: User
@@ -23,10 +19,6 @@ const initialState: UserSliceState = {
     status: "idle",
     errMsg: undefined,
 }
-
-const apiService = new ApiService()
-const authService = new AuthService(apiService)
-const usersService = new UsersService(apiService)
 
 export const userSlice = createAppSlice({
     name: "user",

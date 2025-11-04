@@ -29,10 +29,9 @@ import FormPhone from "../../components/FormPhone"
 import MyButton from "../../components/MyButton"
 import StatusMessage from "../../components/StatusMessage"
 import ImageUploader from "../../components/ImageUploader"
-import { ChangeEvent, Dispatch, memo, SetStateAction, useState } from "react"
+import { ChangeEvent, Dispatch, SetStateAction, useState } from "react"
 import { isSchoolPersonnel } from "../../utils/isSchoolPersonnel"
-import { ApiService } from "../../services/api.service"
-import { UsersService } from "../../services/users/users.service"
+import { usersService } from "../../services/users/users.service"
 import convertToWebP from "../../utils/convertToWebP"
 
 export default function ProfilePage() {
@@ -68,10 +67,6 @@ function AvatarUploader({
     // Store
     const dispatch = useAppDispatch()
     const user = useAppSelector(selectUser)
-
-    // Services
-    const apiService = new ApiService()
-    const usersService = new UsersService(apiService)
 
     // Handler
     const onChangeHandler = async (e: ChangeEvent<HTMLInputElement>) => {

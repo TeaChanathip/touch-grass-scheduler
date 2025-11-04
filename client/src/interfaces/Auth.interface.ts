@@ -15,3 +15,8 @@ export interface RegisterPayload {
     password: string
     school_num?: string
 }
+
+export interface ResetPwdPayload {
+    reset_pwd_token: string
+    new_password: string
+}

@@ -1,22 +1,27 @@
 "use client"
 
 import { FormProvider, useForm, useFormContext } from "react-hook-form"
-import FormStringInput from "../../../components/FormStringInput"
 import * as z from "zod"
+import FormPassword from "../../../components/FormPassword"
 import { zodResolver } from "@hookform/resolvers/zod"
-import MyButton from "../../../components/MyButton"
-import { authService } from "../../../services/auth/auth.service"
 import { memo, useState } from "react"
+import { authService } from "../../../services/auth/auth.service"
 import StatusMessage from "../../../components/StatusMessage"
-import useCountdown from "../../../hooks/useCountdown"
+import MyButton from "../../../components/MyButton"
+import { useParams } from "next/navigation"
 
 // Form Schema
-const schema = z.object({
-    email: z.email("Invalid email"),
-})
+const schema = z
+    .object({
+        password: z.string().min(8, "Min 8 characters").max(64, "Too long"),
+        confirm_password: z.string(),
+    })
+    .refine((data) => data.password === data.confirm_password, {
+        message: "Passwords don't match",
+        path: ["confirm_password"],
+    })
 
-export default function VerifyEmailForm() {
-    // Hooks
+export default function RestPwdPage() {
     const formMethods = useForm({
         resolver: zodResolver(schema),
         mode: "onChange",
@@ -25,14 +30,13 @@ export default function VerifyEmailForm() {
     return (
         <FormProvider {...formMethods}>
             <form className="w-[70vw] max-w-96 flex flex-col gap-5">
-                <FormStringInput
-                    label="Email Address"
-                    type="email"
-                    name="email"
-                    required
+                <FormPassword label="Password" name="password" />
+                <FormPassword
+                    label="Confirm Password"
+                    name="confirm_password"
                 />
-                <ButtonSection />
             </form>
+            <ButtonSection />
         </FormProvider>
     )
 }
@@ -45,25 +49,25 @@ const ButtonSection = memo(function ButtonSection() {
     } = useFormContext()
 
     // Hooks
-    const [countdown, startCountdown] = useCountdown(30)
     const [responseMsg, setResponseMsg] = useState<
         { msg: string; variant: "success" | "error" } | undefined
     >(undefined)
-
-    // services
+    const params = useParams<{ resetPwdToken: string }>()
 
     const submitHandler = async (formData: z.infer<typeof schema>) => {
         const result = schema.safeParse(formData)
 
+        if (result.error) return
+
         try {
-            await authService.getRegistrationMail(result.data!.email)
+            await authService.resetPwd({
+                reset_pwd_token: params.resetPwdToken,
+                new_password: result.data.password,
+            })
             setResponseMsg({
-                msg: "Verification email was sent",
+                msg: "Password reset successfully",
                 variant: "success",
             })
-
-            // Prevent user from spaming requests
-            startCountdown()
         } catch (err) {
             if (err instanceof Error)
                 setResponseMsg({ msg: err.message, variant: "error" })
@@ -80,11 +84,11 @@ const ButtonSection = memo(function ButtonSection() {
             <MyButton
                 variant="positive"
                 type="submit"
-                disabled={!isValid || isSubmitting || countdown !== 0}
+                disabled={!isValid || isSubmitting}
                 onClick={handleSubmit(submitHandler)}
                 className="w-full md:w-44"
             >
-                Send{countdown !== 0 && ` (${countdown})`}
+                Submit
             </MyButton>
         </section>
     )

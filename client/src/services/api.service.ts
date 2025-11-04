@@ -129,6 +129,8 @@ export class ApiService {
     }
 }
 
+export const apiService = new ApiService()
+
 export class ApiError extends Error {
     status: number
 

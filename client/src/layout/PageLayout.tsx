@@ -9,7 +9,7 @@ export default function PageLayout({
 }) {
     return (
         <div className="flex flex-col gap-10 items-center pt-10">
-            <h1 className="text-5xl">{title}</h1>
+            <h1 className="text-5xl text-wrap text-center">{title}</h1>
             {children}
         </div>
     )
