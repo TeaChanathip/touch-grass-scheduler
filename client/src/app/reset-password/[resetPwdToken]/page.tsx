@@ -8,7 +8,7 @@ import { memo, useState } from "react"
 import { authService } from "../../../services/auth/auth.service"
 import StatusMessage from "../../../components/StatusMessage"
 import MyButton from "../../../components/MyButton"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 
 // Form Schema
 const schema = z
@@ -53,6 +53,7 @@ const ButtonSection = memo(function ButtonSection() {
         { msg: string; variant: "success" | "error" } | undefined
     >(undefined)
     const params = useParams<{ resetPwdToken: string }>()
+    const router = useRouter()
 
     const submitHandler = async (formData: z.infer<typeof schema>) => {
         const result = schema.safeParse(formData)
@@ -81,15 +82,29 @@ const ButtonSection = memo(function ButtonSection() {
                 variant={responseMsg?.variant ?? "info"}
                 className="text-2xl"
             />
-            <MyButton
-                variant="positive"
-                type="submit"
-                disabled={!isValid || isSubmitting}
-                onClick={handleSubmit(submitHandler)}
-                className="w-full md:w-44"
-            >
-                Submit
-            </MyButton>
+            <div className="mt-3 flex flex-col md:flex-row gap-5">
+                <MyButton
+                    variant="positive"
+                    type="submit"
+                    disabled={
+                        !isValid ||
+                        isSubmitting ||
+                        responseMsg?.variant === "success"
+                    }
+                    onClick={handleSubmit(submitHandler)}
+                    className="w-full md:w-44"
+                >
+                    Submit
+                </MyButton>
+                <MyButton
+                    variant="positive"
+                    type="button"
+                    hidden={responseMsg?.variant !== "success"}
+                    onClick={() => router.push("/login")}
+                >
+                    Go to Login
+                </MyButton>
+            </div>
         </section>
     )
 })
