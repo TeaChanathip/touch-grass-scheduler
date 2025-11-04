@@ -24,8 +24,7 @@ type AppConfig struct {
 	DBSSLMode  string `env:"DB_SSLMODE" envDefault:"disable"`
 
 	// Client
-	ClientURL  string `env:"CLIENT_URL" envDefault:"http://localhost"`
-	ClientPort int    `env:"CLIENT_PORT" envDefault:"3000"`
+	ClientURL string `env:"CLIENT_URL" envDefault:"http://localhost:3000"`
 
 	// Server
 	AppDomain string `env:"APP_DOMAIN" envDefault:"localhost"`

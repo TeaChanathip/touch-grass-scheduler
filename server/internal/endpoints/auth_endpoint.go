@@ -9,4 +9,6 @@ const (
 	RegisterV1            AuthEndpoint = "api/v1/auth/register"
 	LoginV1               AuthEndpoint = "api/v1/auth/login"
 	LogoutV1              AuthEndpoint = "api/v1/auth/logout"
+	GetResetPwdMailV1     AuthEndpoint = "api/v1/auth/reset-password-mail"
+	ResetPwdV1            AuthEndpoint = "api/v1/auth/reset-password"
 )

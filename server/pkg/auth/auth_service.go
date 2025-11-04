@@ -42,6 +42,8 @@ type AuthServiceInterface interface {
 	GetRegistrationMail(email string) error
 	Register(registrationTokenString string, body *RegisterBody) (*models.PublicUser, string, error)
 	Login(body *LoginBody) (*models.PublicUser, string, error)
+	GetResetPwdMail(email string) error
+	ResetPwd(body *ResetPwdBody) error
 }
 
 func NewAuthService(params AuthServiceParams) AuthServiceInterface {
@@ -72,7 +74,8 @@ func (service *AuthService) GetRegistrationMail(email string) error {
 	} else {
 		// Send verification email if it is new user
 		var registrationToken string
-		registrationToken, err = service.generateRegistrationToken(email)
+		registrationToken, err = service.generateActionToken(email,
+			time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 		if err != nil {
 			return err
 		}
@@ -169,22 +172,73 @@ func (service *AuthService) Login(body *LoginBody) (*models.PublicUser, string, 
 	return publicUser, accessToken, nil
 }
 
-func (service *AuthService) Verify(verificationToken string) error {
+func (service *AuthService) GetResetPwdMail(email string) error {
+	// Check if email actually existed
+	user, err := service.UserService.GetUserByEmail(email)
+	if err != nil {
+		if errors.Is(err, common.ErrUserNotFound) {
+			service.Logger.Debug("")
+			return err
+		}
+
+		service.Logger.Error("", zap.Error(err))
+		return common.ErrDatabase
+	}
+
+	resetPwdToken, err := service.generateActionToken(user.Email, time.Minute*5)
+	if err != nil {
+		return err
+	}
+
+	err = service.MailService.SendResetPwd(user, resetPwdToken)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (service *AuthService) ResetPwd(body *ResetPwdBody) error {
+	// Parse resetPwdToken
+	resetPwdToken, err := common.ParseJWTToken(body.ResetPwdToken, service.AppConfig.JWTSecret)
+	if err != nil {
+		service.Logger.Debug("Error parsing resetPwdToken", zap.Error(err))
+		return common.ErrActionTokenParsing
+	}
+
+	// Get email from accessToken claims
+	claims, ok := resetPwdToken.Claims.(jwt.MapClaims)
+	if !ok || !resetPwdToken.Valid {
+		service.Logger.Debug("Error getting claims from resetPwdToken")
+		return common.ErrActionTokenClaimsGetting
+	}
+	email, ok := claims["email"].(string)
+	if email == "" || !ok {
+		service.Logger.Debug("Error getting email from claims of resetPwdToken")
+		return common.ErrActionTokenClaimsGetting
+	}
+
+	// Hash and updaate password
+	err = service.UserService.UpdateUserPwdByEmail(email, body.NewPassword)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // ======================== HELPER METHODS ========================
 
-func (service *AuthService) generateRegistrationToken(email string) (string, error) {
+func (service *AuthService) generateActionToken(email string, expiresIn time.Duration) (string, error) {
 	claims := jwt.MapClaims{
 		"email": email,
 	}
 
 	signedToken, err := common.GenerateJTWToken(claims,
 		service.AppConfig.JWTSecret,
-		service.AppConfig.JWTExpiresIn)
+		expiresIn)
 	if err != nil {
-		service.Logger.Error("Internal error while signing JWT registrationToken:", zap.Error(err))
+		service.Logger.Error("Internal error while signing JWT actionToken:", zap.Error(err))
 		return "", common.ErrTokenGeneration
 	}
 
@@ -199,7 +253,7 @@ func (service *AuthService) generateAccessToken(userID uuid.UUID, role types.Use
 
 	signedToken, err := common.GenerateJTWToken(claims,
 		service.AppConfig.JWTSecret,
-		service.AppConfig.JWTExpiresIn)
+		time.Duration(service.AppConfig.JWTExpiresIn)*time.Hour)
 	if err != nil {
 		service.Logger.Error("Internal error while signing JWT accessToken:", zap.Error(err))
 		return "", common.ErrTokenGeneration

@@ -7,9 +7,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateJTWToken(claims jwt.MapClaims, jwtSecret string, jwtExpiresIn int) (string, error) {
+func GenerateJTWToken(claims jwt.MapClaims, jwtSecret string, jwtExpiresIn time.Duration) (string, error) {
 	// Compute token expiration
-	exp := time.Now().Add(time.Duration(jwtExpiresIn) * time.Hour)
+	exp := time.Now().Add(jwtExpiresIn)
 	claims["exp"] = jwt.NewNumericDate(exp)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

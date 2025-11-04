@@ -70,6 +70,11 @@ type LoginBody struct {
 	Password string `json:"password" binding:"required,min=8,max=64"`
 }
 
+type ResetPwdBody struct {
+	ResetPwdToken string `json:"reset_pwd_token" binding:"required,jwt"`
+	NewPassword   string `json:"new_password" binding:"required,min=8,max=64"`
+}
+
 // ======================== METHODS ========================
 
 func (controller *AuthController) GetRegistrationMail(ctx *gin.Context) {
@@ -161,6 +166,41 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 
 func (controller *AuthController) Logout(ctx *gin.Context) {
 	controller.setAccessTokenCookie(ctx, "")
+	ctx.Status(http.StatusOK)
+}
+
+func (controller *AuthController) GetResetPwdMail(ctx *gin.Context) {
+	// Get email from params
+	email := ctx.Param("email")
+
+	// Validate email
+	if _, err := mail.ParseAddress(email); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+		return
+	}
+
+	// Business logic
+	err := controller.AuthService.GetResetPwdMail(email)
+	if err != nil {
+		common.HandleBusinessLogicErr(ctx, err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
+func (controller *AuthController) ResetPwd(ctx *gin.Context) {
+	// Get validated body from context that set by RequestBodyValidator
+	validatedBody, _ := ctx.Get("validatedBody")
+	resetPwdBody, _ := validatedBody.(*ResetPwdBody)
+
+	// Business logic
+	err := controller.AuthService.ResetPwd(resetPwdBody)
+	if err != nil {
+		common.HandleBusinessLogicErr(ctx, err)
+		return
+	}
+
 	ctx.Status(http.StatusOK)
 }
 

@@ -53,4 +53,11 @@ func (routes *AuthRoutes) Setup() {
 	routes.Router.POST(string(endpoints.LogoutV1),
 		routes.AuthMiddleware.Handler(),
 		routes.AuthController.Logout)
+
+	routes.Router.GET(string(endpoints.GetResetPwdMailV1+"/:email"),
+		routes.AuthController.GetResetPwdMail)
+
+	routes.Router.PUT(string(endpoints.ResetPwdV1),
+		routes.RequestBodyValidator.Handler("reset password", ResetPwdBody{}),
+		routes.AuthController.ResetPwd)
 }

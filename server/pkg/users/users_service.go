@@ -38,11 +38,11 @@ type UserServiceInterface interface {
 	GetPublicUserByID(userID uuid.UUID) (*models.PublicUser, error)
 	UpdateUserByID(userID uuid.UUID, body *UpdateUserBody) (*models.PublicUser, error)
 	GetUploadAvatarSignedURL(userID uuid.UUID) (map[string]any, error)
+	UpdateUserPwdByEmail(email, newPassword string) error
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(userID uuid.UUID) (*models.User, error)
 	HandleAvatarUpload(userID uuid.UUID) (*url.URL, error)
-	generateAvatarUploadURL(objectName string) (*url.URL, map[string]string, error)
 }
 
 // Verify interface implementation at compile time
@@ -396,6 +396,30 @@ func (service *UserService) GetUserByID(userID uuid.UUID) (*models.User, error) 
 	}
 
 	return user, nil
+}
+
+func (service *UserService) UpdateUserPwdByEmail(email, newPassword string) error {
+	// Hash the password
+	hashed, err := common.HashPassword(newPassword)
+	if err != nil {
+		service.Logger.Error("Internal error while hashing the password:", zap.Error(err))
+		return common.ErrPasswordHashing
+	}
+
+	err = service.DB.Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("email = ?", email).Update("password", hashed)
+		// Must be only one user that affected
+		if result.Error != nil || result.RowsAffected != 1 {
+			service.Logger.Error("Database error while updating user's password", zap.Error(result.Error))
+			return common.ErrDatabase
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (service *UserService) generateAvatarUploadURL(objectKey string) (*url.URL, map[string]string, error) {
