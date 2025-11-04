@@ -100,6 +100,9 @@ func (service *AuthService) Register(registrationTokenString string, body *Regis
 	registrationToken, err := common.ParseJWTToken(registrationTokenString, service.AppConfig.JWTSecret)
 	if err != nil {
 		service.Logger.Debug("Error parsing registrationToken", zap.Error(err))
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, "", common.ErrActionTokenExpired
+		}
 		return nil, "", common.ErrActionTokenParsing
 	}
 
@@ -185,10 +188,13 @@ func (service *AuthService) GetResetPwdMail(email string) error {
 		return common.ErrDatabase
 	}
 
-	resetPwdToken, err := service.generateActionToken(user.Email, time.Minute*5)
+	resetPwdToken, err := service.generateActionToken(user.Email, time.Minute*10)
 	if err != nil {
 		return err
 	}
+	// WARN: This is only for testing
+	service.Logger.Debug("Temporary", zap.String("resetPwdToken", resetPwdToken))
+	return nil
 
 	err = service.MailService.SendResetPwd(user, resetPwdToken)
 	if err != nil {
@@ -203,6 +209,9 @@ func (service *AuthService) ResetPwd(body *ResetPwdBody) error {
 	resetPwdToken, err := common.ParseJWTToken(body.ResetPwdToken, service.AppConfig.JWTSecret)
 	if err != nil {
 		service.Logger.Debug("Error parsing resetPwdToken", zap.Error(err))
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return common.ErrActionTokenExpired
+		}
 		return common.ErrActionTokenParsing
 	}
 

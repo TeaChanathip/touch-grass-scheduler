@@ -127,7 +127,7 @@ func (service *MailService) SendResetPwd(user *models.User, resetPwdToken string
 	}{
 		UserFirstName: user.FirstName,
 		AppName:       appName,
-		ExpiresIn:     5, // minutes
+		ExpiresIn:     10, // minutes
 		ResetPwdURL: fmt.Sprintf("%s/%s/%s",
 			service.AppConfig.ClientURL,
 			endpoints.ClientResetPwd,

@@ -407,7 +407,7 @@ func (service *UserService) UpdateUserPwdByEmail(email, newPassword string) erro
 	}
 
 	err = service.DB.Transaction(func(tx *gorm.DB) error {
-		result := tx.Where("email = ?", email).Update("password", hashed)
+		result := tx.Model(&models.User{}).Where("email = ?", email).Update("password", hashed)
 		// Must be only one user that affected
 		if result.Error != nil || result.RowsAffected != 1 {
 			service.Logger.Error("Database error while updating user's password", zap.Error(result.Error))

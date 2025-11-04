@@ -31,6 +31,7 @@ var (
 	ErrDuplicatedEmail          = CustomError{StatusCode: http.StatusBadRequest, Message: "email already exists"}
 	ErrActionTokenParsing       = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken parsing failed"}
 	ErrActionTokenClaimsGetting = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken getting claims failed"}
+	ErrActionTokenExpired       = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken already expired"}
 
 	// 401 Authentication Errors
 	ErrInvalidCredentials = CustomError{StatusCode: http.StatusUnauthorized, Message: "invalid credentials"}
