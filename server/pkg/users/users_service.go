@@ -43,7 +43,7 @@ type UserServiceInterface interface {
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
 	GetUserByID(userID uuid.UUID) (*models.User, error)
-	HandleAvatarUpload(userID uuid.UUID) (*url.URL, error)
+	HandleAvatarUpload(ctx context.Context, userID uuid.UUID) (*url.URL, error)
 }
 
 // Verify interface implementation at compile time
@@ -190,17 +190,16 @@ func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[stri
 	return response, nil
 }
 
-func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, error) {
+func (service *UserService) HandleAvatarUpload(ctx context.Context, userID uuid.UUID) (*url.URL, error) {
 	// Query pending upload of user's avatar
 	var pendingUpload *models.PendingUpload
-	result := service.DB.Where("user_id = ? AND type = 'avatar'", userID.String()).First(&pendingUpload)
+	result := service.DB.Where("user_id = ? AND type = 'avatar'", userID).First(&pendingUpload)
 	if result.Error != nil {
 		service.Logger.Error("Database error while getting pending upload with UserID", zap.Error(result.Error))
 		return nil, common.ErrDatabase
 	}
 
 	// Check if the object actually exists on the Storage
-	ctx := context.Background()
 	_, err := service.StorageClient.StatObject(ctx,
 		service.AppConfig.StorageBucketName,
 		fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
@@ -215,7 +214,23 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, erro
 		return nil, common.ErrStorage
 	}
 
+	// Copy and rename pending object in Storage
+	src := minio.CopySrcOptions{
+		Bucket: service.AppConfig.StorageBucketName,
+		Object: fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
+	}
+	dst := minio.CopyDestOptions{
+		Bucket: service.AppConfig.StorageBucketName,
+		Object: pendingUpload.ObjectKey,
+	}
+	_, err = service.StorageClient.CopyObject(ctx, dst, src)
+	if err != nil {
+		service.Logger.Error("Storage error while moving avatar from pending to avatars", zap.Error(err))
+		return nil, common.ErrStorage
+	}
+
 	var updatedUser *models.User
+	var oldAvatarKey *string
 	err = service.DB.Transaction(func(tx *gorm.DB) error {
 		var result *gorm.DB
 
@@ -234,14 +249,14 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, erro
 			return common.ErrDatabase
 		}
 
-		oldAvatarKey := updatedUser.AvatarKey
+		oldAvatarKey = updatedUser.AvatarKey
 
-		// Error group for the following go routines
-		g, errGroupCtx := errgroup.WithContext(context.Background())
+		// Error group for the following database operation go routines
+		gDB, errGroupDBCtx := errgroup.WithContext(ctx)
 
 		// Update 'avatar_url' of user in DB
-		g.Go(func() error {
-			result = tx.WithContext(errGroupCtx).Model(&updatedUser).
+		gDB.Go(func() error {
+			result = tx.WithContext(errGroupDBCtx).Model(&updatedUser).
 				Update("avatar_key", &pendingUpload.ObjectKey)
 			if result.Error != nil {
 				// Other errors
@@ -254,9 +269,9 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, erro
 		})
 
 		// Delete pending upload in Database
-		g.Go(func() error {
+		gDB.Go(func() error {
 			result = tx.
-				WithContext(errGroupCtx).
+				WithContext(errGroupDBCtx).
 				Where("user_id = ? AND object_key = ? AND type = 'avatar'", userID, pendingUpload.ObjectKey).
 				Delete(models.PendingUpload{})
 			if result.Error != nil {
@@ -274,43 +289,34 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, erro
 			return nil
 		})
 
-		// Delete old avatar from Storage (if exists)
-		g.Go(func() error {
-			if oldAvatarKey != nil {
-				err := service.StorageClient.RemoveObject(errGroupCtx,
-					service.AppConfig.StorageBucketName,
-					*oldAvatarKey,
-					minio.RemoveObjectOptions{})
-				if err != nil {
-					service.Logger.Error("Storage error while deleting old avatar", zap.Error(err))
-					return common.ErrStorage
-				}
+		// Return error if any go routines error
+		return gDB.Wait()
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Error group for the following storage operation go routines
+	gStorage, errGroupStorageCtx := errgroup.WithContext(ctx)
+
+	// Delete old avatar from Storage (if exists)
+	if oldAvatarKey != nil {
+		gStorage.Go(func() error {
+			err := service.StorageClient.RemoveObject(errGroupStorageCtx,
+				service.AppConfig.StorageBucketName,
+				*oldAvatarKey,
+				minio.RemoveObjectOptions{})
+			if err != nil {
+				service.Logger.Error("Storage error while deleting old avatar", zap.Error(err))
+				return common.ErrStorage
 			}
 			return nil
 		})
+	}
 
-		// Return error if any go routines error
-		if err := g.Wait(); err != nil {
-			return err
-		}
-
-		// Copy and rename pending object in Storage
-		src := minio.CopySrcOptions{
-			Bucket: service.AppConfig.StorageBucketName,
-			Object: fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
-		}
-		dst := minio.CopyDestOptions{
-			Bucket: service.AppConfig.StorageBucketName,
-			Object: pendingUpload.ObjectKey,
-		}
-		_, err = service.StorageClient.CopyObject(ctx, dst, src)
-		if err != nil {
-			service.Logger.Error("Storage error while moving avatar from pending to avatars", zap.Error(err))
-			return common.ErrStorage
-		}
-
-		// Delete the pending object in Storage
-		err = service.StorageClient.RemoveObject(ctx,
+	// Delete the pending object in Storage
+	gStorage.Go(func() error {
+		err = service.StorageClient.RemoveObject(errGroupStorageCtx,
 			service.AppConfig.StorageBucketName,
 			fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
 			minio.RemoveObjectOptions{})
@@ -318,14 +324,13 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, erro
 			service.Logger.Error("Storage error while deleting pending avatar object", zap.Error(err))
 			return common.ErrStorage
 		}
-
 		return nil
 	})
-	if err != nil {
+
+	if err := gStorage.Wait(); err != nil {
 		return nil, err
 	}
 
-	ctx = context.Background()
 	signedURL, err := service.StorageClient.PresignedGetObject(ctx,
 		service.AppConfig.StorageBucketName,
 		pendingUpload.ObjectKey,
