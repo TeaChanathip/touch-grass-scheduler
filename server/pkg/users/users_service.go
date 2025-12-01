@@ -16,6 +16,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
@@ -235,48 +236,65 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, erro
 
 		oldAvatarKey := updatedUser.AvatarKey
 
-		// Update 'avatar_url' of user in DB
-		result = tx.Model(&updatedUser).
-			Update("avatar_key", &pendingUpload.ObjectKey)
-		if result.Error != nil {
-			// Other errors
-			service.Logger.Error("Database error while updating user's avatar_key",
-				zap.String("id", userID.String()),
-				zap.Error(result.Error))
-			return common.ErrDatabase
-		}
+		// Error group for the following go routines
+		g, errGroupCtx := errgroup.WithContext(context.Background())
 
-		// Delete pending upload
-		result = tx.
-			Where("user_id = ? AND object_key = ? AND type = 'avatar'", userID, pendingUpload.ObjectKey).
-			Delete(models.PendingUpload{})
-		if result.Error != nil {
-			service.Logger.Error("Database error while deleting pending upload",
-				zap.Error(result.Error),
-			)
-			return common.ErrDatabase
-		}
-		if result.RowsAffected == 0 {
-			service.Logger.Warn("No pending upload deleted",
-				zap.String("user_id", userID.String()),
-				zap.String("object_key", pendingUpload.ObjectKey))
-			return common.ErrPendingUploadNotFound
-		}
+		// Update 'avatar_url' of user in DB
+		g.Go(func() error {
+			result = tx.WithContext(errGroupCtx).Model(&updatedUser).
+				Update("avatar_key", &pendingUpload.ObjectKey)
+			if result.Error != nil {
+				// Other errors
+				service.Logger.Error("Database error while updating user's avatar_key",
+					zap.String("id", userID.String()),
+					zap.Error(result.Error))
+				return common.ErrDatabase
+			}
+			return nil
+		})
+
+		// Delete pending upload in Database
+		g.Go(func() error {
+			result = tx.
+				WithContext(errGroupCtx).
+				Where("user_id = ? AND object_key = ? AND type = 'avatar'", userID, pendingUpload.ObjectKey).
+				Delete(models.PendingUpload{})
+			if result.Error != nil {
+				service.Logger.Error("Database error while deleting pending upload",
+					zap.Error(result.Error),
+				)
+				return common.ErrDatabase
+			}
+			if result.RowsAffected == 0 {
+				service.Logger.Warn("No pending upload deleted",
+					zap.String("user_id", userID.String()),
+					zap.String("object_key", pendingUpload.ObjectKey))
+				return common.ErrPendingUploadNotFound
+			}
+			return nil
+		})
 
 		// Delete old avatar from Storage (if exists)
-		if oldAvatarKey != nil {
-			ctx := context.Background()
-			err := service.StorageClient.RemoveObject(ctx,
-				service.AppConfig.StorageBucketName,
-				*oldAvatarKey,
-				minio.RemoveObjectOptions{})
-			if err != nil {
-				service.Logger.Error("Storage error while deleting old avatar", zap.Error(err))
-				return common.ErrStorage
+		g.Go(func() error {
+			if oldAvatarKey != nil {
+				err := service.StorageClient.RemoveObject(errGroupCtx,
+					service.AppConfig.StorageBucketName,
+					*oldAvatarKey,
+					minio.RemoveObjectOptions{})
+				if err != nil {
+					service.Logger.Error("Storage error while deleting old avatar", zap.Error(err))
+					return common.ErrStorage
+				}
 			}
+			return nil
+		})
+
+		// Return error if any go routines error
+		if err := g.Wait(); err != nil {
+			return err
 		}
 
-		// Remove "pending/" prefix from the object in Storage
+		// Copy and rename pending object in Storage
 		src := minio.CopySrcOptions{
 			Bucket: service.AppConfig.StorageBucketName,
 			Object: fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
@@ -291,7 +309,7 @@ func (service *UserService) HandleAvatarUpload(userID uuid.UUID) (*url.URL, erro
 			return common.ErrStorage
 		}
 
-		// Delete the pending object
+		// Delete the pending object in Storage
 		err = service.StorageClient.RemoveObject(ctx,
 			service.AppConfig.StorageBucketName,
 			fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
