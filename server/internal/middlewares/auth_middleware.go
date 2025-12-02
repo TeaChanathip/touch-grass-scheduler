@@ -1,7 +1,7 @@
 package middlewarefx
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 
@@ -34,30 +34,37 @@ func NewAuthMiddleware(params AuthMiddlewareParams) *AuthMiddleware {
 
 func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserRole, error) {
 	accessTokenString, err := ctx.Cookie("accessToken")
-	if err != nil || accessTokenString == "" {
-		return "", "", errors.New("missing accessToken")
+	if err != nil {
+		return "", "", fmt.Errorf("failed retrieving access token: %w", err)
+	}
+	if accessTokenString == "" {
+		return "", "", common.ErrMissingToken
 	}
 
 	accessToken, err := common.ParseJWTToken(accessTokenString, m.AppConfig.JWTSecret)
 	if err != nil {
-		return "", "", errors.New("invalid accessToken")
+		return "", "", fmt.Errorf("failed parsing access token: %w", err)
 	}
 
 	// Validate accessToken claims
 	claims, ok := accessToken.Claims.(jwt.MapClaims)
-	if !ok || !accessToken.Valid {
-		return "", "", errors.New("invalid accessToken claims")
+	if !ok {
+		return "", "", common.ErrVariableParsing
+	}
+	if !accessToken.Valid {
+		return "", "", common.ErrInvalidCredentials
 	}
 
 	// Extract user ID and role from claims
 	userID, ok := claims["user_id"].(string)
 	if !ok {
-		return "", "", errors.New("invalid user ID in accessToken")
+		// return "", "", errors.New("invalid user ID in accessToken")
+		return "", "", common.ErrMissingClaims
 	}
 
 	userRole, ok := claims["role"].(string)
 	if !ok {
-		return "", "", errors.New("invalid role in accessToken")
+		return "", "", fmt.Errorf("failed asserting string type to user role from claims: %w", err)
 	}
 
 	return userID, types.UserRole(userRole), nil
@@ -67,13 +74,13 @@ func (m *AuthMiddleware) HandlerWithRole(roles ...types.UserRole) gin.HandlerFun
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
+			m.Logger.Info("Error on AuthMiddleware with role", zap.Error(err))
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
 
 		// Check if user has required role
 		if !slices.Contains(roles, userRole) {
-			m.Logger.Debug("Insufficient permissions")
 			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
 			return
 		}
@@ -90,6 +97,7 @@ func (m *AuthMiddleware) Handler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
+			m.Logger.Info("Error on AuthMiddleware", zap.Error(err))
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
