@@ -46,12 +46,13 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 		return "", "", fmt.Errorf("failed parsing access token: %w", err)
 	}
 
+	if !accessToken.Valid {
+		return "", "", common.ErrInvalidCredentials
+	}
+
 	// Validate accessToken claims
 	claims, ok := accessToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", "", common.ErrVariableParsing
-	}
-	if !accessToken.Valid {
 		return "", "", common.ErrInvalidCredentials
 	}
 
@@ -64,7 +65,7 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 
 	userRole, ok := claims["role"].(string)
 	if !ok {
-		return "", "", fmt.Errorf("failed asserting string type to user role from claims: %w", err)
+		return "", "", fmt.Errorf("failed asserting user role type: %w", err)
 	}
 
 	return userID, types.UserRole(userRole), nil
@@ -74,7 +75,6 @@ func (m *AuthMiddleware) HandlerWithRole(roles ...types.UserRole) gin.HandlerFun
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
-			m.Logger.Info("Error on AuthMiddleware with role", zap.Error(err))
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
@@ -97,7 +97,6 @@ func (m *AuthMiddleware) Handler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
-			m.Logger.Info("Error on AuthMiddleware", zap.Error(err))
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}

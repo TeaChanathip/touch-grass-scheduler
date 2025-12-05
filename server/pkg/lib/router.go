@@ -1,6 +1,7 @@
 package libfx
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -12,7 +13,15 @@ import (
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+)
+
+const (
+	reset  = "\033[0m"
+	red    = "\033[31m"
+	green  = "\033[32m"
+	yellow = "\033[33m"
+	blue   = "\033[34m"
+	cyan   = "\033[36m"
 )
 
 type RouterParam struct {
@@ -65,33 +74,50 @@ func NewRouter(params RouterParam) *gin.Engine {
 
 // Custom Gin Middleware for Logger
 func ginLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		start := time.Now()
-		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
+		path := ctx.Request.URL.Path
+		query := ctx.Request.URL.RawQuery
 
-		c.Next()
+		ctx.Next()
 
 		end := time.Now()
 		latency := end.Sub(start)
+		statusCode := ctx.Writer.Status()
+		method := ctx.Request.Method
 
-		fields := []zapcore.Field{
-			zap.Int("status", c.Writer.Status()),
-			zap.String("method", c.Request.Method),
-			zap.String("path", path),
-			zap.String("query", query),
-			zap.String("ip", c.ClientIP()),
-			zap.String("user-agent", c.Request.UserAgent()),
-			zap.Duration("latency", latency),
+		// Determine status code color
+		var statusColor string
+		switch {
+		case statusCode >= 200 && statusCode < 300:
+			statusColor = green
+		case statusCode >= 300 && statusCode < 400:
+			statusColor = cyan
+		case statusCode >= 400 && statusCode < 500:
+			statusColor = yellow
+		default: // 5xx or other
+			statusColor = red
 		}
 
-		if len(c.Errors) > 0 {
-			// Append error field if this is an erroneous request.
-			for _, e := range c.Errors.Errors() {
-				logger.Error(e, fields...)
+		// Construct the log message with ANSI colors for console output
+		logMessage := fmt.Sprintf("%s |%s %3d %s| %13v | %15s |%s %-7s %s %s %s",
+			end.Format("2006/01/02 - 15:04:05"), // Timestamp
+			statusColor, statusCode, reset,      // Status code with color
+			latency,
+			ctx.ClientIP(),
+			blue, method, reset, // Method with color
+			path,
+			query,
+		)
+
+		if len(ctx.Errors) > 0 {
+			// Log error with the formatted message
+			for _, e := range ctx.Errors.Errors() {
+				logger.Error(logMessage + " " + e)
 			}
 		} else {
-			logger.Info(path, fields...)
+			// Log info with the formatted message
+			logger.Info(logMessage)
 		}
 	}
 }

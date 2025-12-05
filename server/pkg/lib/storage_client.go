@@ -1,6 +1,8 @@
 package libfx
 
 import (
+	"fmt"
+
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -15,11 +17,8 @@ type StorageClientParams struct {
 	Logger     *zap.Logger
 }
 
-func NewStorageClient(params StorageClientParams) *minio.Client {
-	var useSecure bool = false
-	if params.FlagConfig.Environment == "production" {
-		useSecure = true
-	}
+func NewStorageClient(params StorageClientParams) (*minio.Client, error) {
+	useSecure := params.FlagConfig.Environment == "production"
 
 	minioClient, err := minio.New(
 		params.AppConfig.StorageEndpoint,
@@ -29,8 +28,8 @@ func NewStorageClient(params StorageClientParams) *minio.Client {
 		},
 	)
 	if err != nil {
-		params.Logger.Fatal("Error connecting to Storage", zap.Error(err))
+		return nil, fmt.Errorf("failed connecting to storage: %w", err)
 	}
 
-	return minioClient
+	return minioClient, nil
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/TeaChanathip/touch-grass-scheduler/server/internal/types"
@@ -41,10 +42,12 @@ func (u *User) ToPublic(storageClient *minio.Client, bucketName string, expires 
 	var avatarURL *string = nil
 
 	if u.AvatarKey != nil {
-		ctx := context.Background()
+		ctx, cancle := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancle()
+
 		signedURL, err := storageClient.PresignedGetObject(ctx, bucketName, *u.AvatarKey, expires, nil)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed getting presigned url: %w", err)
 		}
 
 		signedURLStr := signedURL.String()

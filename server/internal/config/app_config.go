@@ -2,7 +2,6 @@ package configfx
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/caarlos0/env"
 	"github.com/joho/godotenv"
@@ -47,12 +46,12 @@ type AppConfig struct {
 	StorageBucketName      string `env:"STORAGE_BUCKET_NAME,required"`
 }
 
-func NewAppConfig(params AppConfigParams) *AppConfig {
+func NewAppConfig(params AppConfigParams) (*AppConfig, error) {
 	config := &AppConfig{}
 
 	// Load ENV by the set environment (relative to server root directory)
 	if err := godotenv.Load("env/.env." + params.Flag.Environment); err != nil {
-		log.Fatalf("Error loading .env.%s file: %+v", params.Flag.Environment, err)
+		return nil, fmt.Errorf("failed loading .env.%s file: %w", params.Flag.Environment, err)
 	}
 
 	/*
@@ -60,10 +59,10 @@ func NewAppConfig(params AppConfigParams) *AppConfig {
 		Fallback to default values if not defined
 	*/
 	if err := env.Parse(config); err != nil {
-		log.Fatalf("Error parsing environment variables: %+v", err)
+		return nil, fmt.Errorf("failed parsing env: %w", err)
 	}
 
-	return config
+	return config, nil
 }
 
 func (c *AppConfig) GetDBConfig() string {

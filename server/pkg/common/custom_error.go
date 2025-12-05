@@ -33,7 +33,7 @@ var (
 	ErrActionTokenClaimsGetting = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken getting claims failed"}
 	ErrActionTokenExpired       = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken already expired"}
 
-	// 401 Authentication Errors
+	// 401 Authentication/Authorization Errors
 	ErrInvalidCredentials = CustomError{StatusCode: http.StatusUnauthorized, Message: "invalid credentials"}
 	ErrMissingToken       = CustomError{StatusCode: http.StatusUnauthorized, Message: "missing token"}
 	ErrMissingClaims      = CustomError{StatusCode: http.StatusUnauthorized, Message: "missing claims in token"}

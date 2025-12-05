@@ -17,7 +17,7 @@ func NewFlagsConfig() *FlagConfig {
 	flag.Parse()
 
 	if !isValidEnvironment(flagConfig.Environment) {
-		log.Printf("Warning: Invalid environment '%s', using 'development'", flagConfig.Environment)
+		log.Printf("Warning: Invalid environment '%s', fall back to 'development'", flagConfig.Environment)
 		flagConfig.Environment = "development"
 	}
 

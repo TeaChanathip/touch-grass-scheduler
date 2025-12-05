@@ -16,7 +16,7 @@ func GenerateJTWToken(claims jwt.MapClaims, jwtSecret string, jwtExpiresIn time.
 
 	singedToken, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed generating JWT token: %w", err)
 	}
 
 	return singedToken, nil
