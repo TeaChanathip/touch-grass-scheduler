@@ -35,8 +35,6 @@ var (
 
 	// 401 Authentication/Authorization Errors
 	ErrInvalidCredentials = CustomError{StatusCode: http.StatusUnauthorized, Message: "invalid credentials"}
-	ErrMissingToken       = CustomError{StatusCode: http.StatusUnauthorized, Message: "missing token"}
-	ErrMissingClaims      = CustomError{StatusCode: http.StatusUnauthorized, Message: "missing claims in token"}
 
 	// 404 Not Found
 	ErrUserNotFound          = CustomError{StatusCode: http.StatusNotFound, Message: "user not found"}

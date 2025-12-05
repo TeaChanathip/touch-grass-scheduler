@@ -1,6 +1,7 @@
 package middlewarefx
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"slices"
@@ -38,7 +39,7 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 		return "", "", fmt.Errorf("failed retrieving access token: %w", err)
 	}
 	if accessTokenString == "" {
-		return "", "", common.ErrMissingToken
+		return "", "", errors.New("access token is empty")
 	}
 
 	accessToken, err := common.ParseJWTToken(accessTokenString, m.AppConfig.JWTSecret)
@@ -47,25 +48,24 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 	}
 
 	if !accessToken.Valid {
-		return "", "", common.ErrInvalidCredentials
+		return "", "", errors.New("access token is not valid")
 	}
 
 	// Validate accessToken claims
 	claims, ok := accessToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", "", common.ErrInvalidCredentials
+		return "", "", errors.New("invalid or missing claims")
 	}
 
 	// Extract user ID and role from claims
 	userID, ok := claims["user_id"].(string)
 	if !ok {
-		// return "", "", errors.New("invalid user ID in accessToken")
-		return "", "", common.ErrMissingClaims
+		return "", "", errors.New("invalid or missing user_id in claims")
 	}
 
 	userRole, ok := claims["role"].(string)
 	if !ok {
-		return "", "", fmt.Errorf("failed asserting user role type: %w", err)
+		return "", "", errors.New("invalid or missing role in claims")
 	}
 
 	return userID, types.UserRole(userRole), nil
@@ -75,7 +75,8 @@ func (m *AuthMiddleware) HandlerWithRole(roles ...types.UserRole) gin.HandlerFun
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			m.Logger.Debug("Handle access token failed", zap.Error(err))
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or missing access token"})
 			return
 		}
 
@@ -97,7 +98,8 @@ func (m *AuthMiddleware) Handler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			m.Logger.Debug("Handle access token failed", zap.Error(err))
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or missing access token"})
 			return
 		}
 
