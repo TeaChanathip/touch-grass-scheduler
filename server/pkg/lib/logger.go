@@ -1,6 +1,8 @@
 package libfx
 
 import (
+	"fmt"
+
 	configfx "github.com/TeaChanathip/touch-grass-scheduler/server/internal/config"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -12,7 +14,7 @@ type LoggerParams struct {
 	FlagConfig *configfx.FlagConfig
 }
 
-func NewLogger(params LoggerParams) *zap.Logger {
+func NewLogger(params LoggerParams) (*zap.Logger, error) {
 	var cfg zap.Config
 
 	switch params.FlagConfig.Environment {
@@ -35,8 +37,7 @@ func NewLogger(params LoggerParams) *zap.Logger {
 
 	logger, err := cfg.Build()
 	if err != nil {
-		// Fallback to a no-op logger if zap fails
-		panic("Failed to initialize zap logger: " + err.Error())
+		return nil, fmt.Errorf("failed building logger: %w", err)
 	}
 
 	logger.Info("Logger initialized successfully.",
@@ -44,5 +45,5 @@ func NewLogger(params LoggerParams) *zap.Logger {
 		zap.String("format", cfg.Encoding),
 	)
 
-	return logger
+	return logger, nil
 }
