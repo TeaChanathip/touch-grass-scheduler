@@ -42,14 +42,14 @@ func NewAuthController(params AuthControllerParams) *AuthController {
 // ======================== REQUEST BODY ========================
 
 type RegisterBody struct {
-	Role       types.UserRole   `json:"role" binding:"required,oneof='student' 'teacher' 'guardian'"` // Not allow Admin to be registered
-	FirstName  string           `json:"first_name" binding:"required,max=128,alpha"`
+	Role       types.UserRole   `json:"role"        binding:"required,oneof='student' 'teacher' 'guardian'"` // Not allow Admin to be registered
+	FirstName  string           `json:"first_name"  binding:"required,max=128,alpha"`
 	MiddleName string           `json:"middle_name" binding:"omitempty,max=128,alpha"`
-	LastName   string           `json:"last_name" binding:"omitempty,max=128,alpha"`
-	Phone      string           `json:"phone" binding:"required,e164"`
-	Gender     types.UserGender `json:"gender" binding:"required,oneof=''male' 'female' 'other' 'prefer_not_to_say'"`
-	Password   string           `json:"password" binding:"required,min=8,max=64"`
-	SchoolNum  *string          `json:"school_num" binding:"omitempty,number,max=16"` // Be either student_num or teacher_num
+	LastName   string           `json:"last_name"   binding:"omitempty,max=128,alpha"`
+	Phone      string           `json:"phone"       binding:"required,e164"`
+	Gender     types.UserGender `json:"gender"      binding:"required,oneof=''male' 'female' 'other' 'prefer_not_to_say'"`
+	Password   string           `json:"password"    binding:"required,min=8,max=64"`
+	SchoolNum  *string          `json:"school_num"  binding:"omitempty,number,max=16"` // Be either student_num or teacher_num
 }
 
 func (rb RegisterBody) ToUserModel() *models.User {
@@ -66,13 +66,13 @@ func (rb RegisterBody) ToUserModel() *models.User {
 }
 
 type LoginBody struct {
-	Email    string `json:"email" binding:"required,email"`
+	Email    string `json:"email"    binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8,max=64"`
 }
 
 type ResetPwdBody struct {
 	ResetPwdToken string `json:"reset_pwd_token" binding:"required,jwt"`
-	NewPassword   string `json:"new_password" binding:"required,min=8,max=64"`
+	NewPassword   string `json:"new_password"    binding:"required,min=8,max=64"`
 }
 
 // ======================== METHODS ========================
@@ -99,12 +99,7 @@ func (controller *AuthController) GetRegistrationMail(ctx *gin.Context) {
 
 func (controller *AuthController) Register(ctx *gin.Context) {
 	// Get registrationToken from params
-	registrationTokenString, exists := ctx.Params.Get("registrationToken")
-	if !exists {
-		controller.Logger.Debug("The registrationToken is not exists.")
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "registrationToken is required"})
-		return
-	}
+	registrationTokenString := ctx.Param("registrationToken")
 
 	// Get validated body from context that set by RequestBodyValidator
 	validatedBody, _ := ctx.Get("validatedBody")
@@ -112,7 +107,7 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 
 	// Validate school number requirements
 	if err := validateSchoolNum(registerBody); err != nil {
-		controller.Logger.Debug("Validation error on register request:", zap.Error(err))
+		controller.Logger.Debug("Register body request validation failed", zap.Error(err))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -127,7 +122,11 @@ func (controller *AuthController) Register(ctx *gin.Context) {
 	// Convert user struct to map with snake_case key
 	userMap, err := common.StructToSnakeMap(user)
 	if err != nil {
-		controller.Logger.Error("Internal error while converting user struct to map:", zap.Error(err))
+		controller.Logger.Error(
+			"Body response parse failed",
+			zap.String("response", "user"),
+			zap.Error(err),
+		)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
 		return
 	}
@@ -153,7 +152,11 @@ func (controller *AuthController) Login(ctx *gin.Context) {
 	// Convert user struct to map with snake_case key
 	userMap, err := common.StructToSnakeMap(user)
 	if err != nil {
-		controller.Logger.Error("Internal error while converting user struct to map:", zap.Error(err))
+		controller.Logger.Error(
+			"Body response parse failed",
+			zap.String("response", "user"),
+			zap.Error(err),
+		)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
 		return
 	}

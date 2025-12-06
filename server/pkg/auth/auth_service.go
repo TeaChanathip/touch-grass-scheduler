@@ -65,63 +65,66 @@ func (service *AuthService) GetRegistrationMail(email string) error {
 		return err
 	}
 
+	// Send warning email if user already existed
 	if user != nil {
-		// Send warning email if user already existed
 		err = service.MailService.SendRegistrationWarning(user)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Send verification email if it is new user
-		var registrationToken string
-		registrationToken, err = service.generateActionToken(email,
-			time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
-		if err != nil {
-			return err
-		}
-
-		// WARN: This is only for testing
-		service.Logger.Debug("Temporary", zap.String("registrationToken", registrationToken))
-		return nil
-
-		err = service.MailService.SendRegistrationVerification(email, registrationToken)
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
-	return nil
+	// Generate registration token
+	var registrationToken string
+	registrationToken, err = service.generateActionToken(email,
+		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
+	if err != nil {
+		return err
+	}
+
+	// Send verification email if it is new user
+	err = service.MailService.SendRegistrationVerification(email, registrationToken)
+	return err
 }
 
-func (service *AuthService) Register(registrationTokenString string, body *RegisterBody) (*models.PublicUser, string, error) {
+func (service *AuthService) Register(
+	registrationTokenStr string,
+	body *RegisterBody,
+) (*models.PublicUser, string, error) {
 	// TODO: Add logic to check if SchoolNumber is valid
 
 	// Parse registerToken
-	registrationToken, err := common.ParseJWTToken(registrationTokenString, service.AppConfig.JWTSecret)
+	registrationToken, err := common.ParseJWTToken(
+		registrationTokenStr,
+		service.AppConfig.JWTSecret,
+	)
 	if err != nil {
-		service.Logger.Debug("Error parsing registrationToken", zap.Error(err))
+		service.Logger.Debug("Registration token parse failed", zap.Error(err))
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, "", common.ErrActionTokenExpired
 		}
 		return nil, "", common.ErrActionTokenParsing
 	}
+	if !registrationToken.Valid {
+		return nil, "", common.ErrInvalidActionToken
+	}
 
 	// Get email from accessToken claims
 	claims, ok := registrationToken.Claims.(jwt.MapClaims)
-	if !ok || !registrationToken.Valid {
-		service.Logger.Debug("Error getting claims from registrationToken")
-		return nil, "", common.ErrActionTokenClaimsGetting
+	if !ok {
+		service.Logger.Debug("Registration token type assertion failed")
+		return nil, "", common.ErrActionTokenClaimsRetrieval
 	}
 	email, ok := claims["email"].(string)
-	if email == "" || !ok {
-		service.Logger.Debug("Error getting email from claims of registrationToken")
-		return nil, "", common.ErrActionTokenClaimsGetting
+	if !ok {
+		service.Logger.Debug(
+			"Registration token claims retrieval failed",
+			zap.String("key", "email"),
+		)
+		return nil, "", common.ErrActionTokenClaimsRetrieval
 	}
 
 	// Check if email is valid
 	if _, err = mail.ParseAddress(email); err != nil {
-		service.Logger.Debug("Error email is invalid")
-		return nil, "", common.ErrVariableParsing
+		service.Logger.Debug("Email invalid or missing", zap.String("email", email))
+		return nil, "", common.ErrActionTokenClaimsRetrieval
 	}
 
 	// Create new user
@@ -130,11 +133,12 @@ func (service *AuthService) Register(registrationTokenString string, body *Regis
 	if err := service.UserService.CreateUser(user); err != nil {
 		return nil, "", err
 	}
-	publicUser, err := user.ToPublic(service.StorageClient,
+	publicUser, err := user.ToPublic(
+		service.Logger,
+		service.StorageClient,
 		service.AppConfig.StorageBucketName,
 		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 	if err != nil {
-		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
 		return nil, "", common.ErrURLSigning
 	}
 
@@ -158,11 +162,12 @@ func (service *AuthService) Login(body *LoginBody) (*models.PublicUser, string, 
 		return nil, "", common.ErrInvalidCredentials
 	}
 
-	publicUser, err := user.ToPublic(service.StorageClient,
+	publicUser, err := user.ToPublic(
+		service.Logger,
+		service.StorageClient,
 		service.AppConfig.StorageBucketName,
 		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 	if err != nil {
-		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
 		return nil, "", common.ErrURLSigning
 	}
 
@@ -179,52 +184,42 @@ func (service *AuthService) GetResetPwdMail(email string) error {
 	// Check if email actually existed
 	user, err := service.UserService.GetUserByEmail(email)
 	if err != nil {
-		if errors.Is(err, common.ErrUserNotFound) {
-			service.Logger.Debug("")
-			return err
-		}
-
-		service.Logger.Error("", zap.Error(err))
-		return common.ErrDatabase
+		return err
 	}
 
 	resetPwdToken, err := service.generateActionToken(user.Email, time.Minute*10)
 	if err != nil {
 		return err
 	}
-	// WARN: This is only for testing
-	service.Logger.Debug("Temporary", zap.String("resetPwdToken", resetPwdToken))
-	return nil
 
 	err = service.MailService.SendResetPwd(user, resetPwdToken)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (service *AuthService) ResetPwd(body *ResetPwdBody) error {
 	// Parse resetPwdToken
 	resetPwdToken, err := common.ParseJWTToken(body.ResetPwdToken, service.AppConfig.JWTSecret)
 	if err != nil {
-		service.Logger.Debug("Error parsing resetPwdToken", zap.Error(err))
+		service.Logger.Debug("Reset password token parse failed", zap.Error(err))
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return common.ErrActionTokenExpired
 		}
 		return common.ErrActionTokenParsing
 	}
+	if !resetPwdToken.Valid {
+		return common.ErrInvalidActionToken
+	}
 
 	// Get email from accessToken claims
 	claims, ok := resetPwdToken.Claims.(jwt.MapClaims)
-	if !ok || !resetPwdToken.Valid {
-		service.Logger.Debug("Error getting claims from resetPwdToken")
-		return common.ErrActionTokenClaimsGetting
+	if !ok {
+		service.Logger.Debug("Reset password token type assertion failed")
+		return common.ErrActionTokenClaimsRetrieval
 	}
 	email, ok := claims["email"].(string)
 	if email == "" || !ok {
-		service.Logger.Debug("Error getting email from claims of resetPwdToken")
-		return common.ErrActionTokenClaimsGetting
+		service.Logger.Debug("Email invalid or missing", zap.String("email", email))
+		return common.ErrActionTokenClaimsRetrieval
 	}
 
 	// Hash and updaate password
@@ -238,7 +233,10 @@ func (service *AuthService) ResetPwd(body *ResetPwdBody) error {
 
 // ======================== HELPER METHODS ========================
 
-func (service *AuthService) generateActionToken(email string, expiresIn time.Duration) (string, error) {
+func (service *AuthService) generateActionToken(
+	email string,
+	expiresIn time.Duration,
+) (string, error) {
 	claims := jwt.MapClaims{
 		"email": email,
 	}
@@ -247,14 +245,17 @@ func (service *AuthService) generateActionToken(email string, expiresIn time.Dur
 		service.AppConfig.JWTSecret,
 		expiresIn)
 	if err != nil {
-		service.Logger.Error("Internal error while signing JWT actionToken:", zap.Error(err))
+		service.Logger.Error("JWT action token generation failed", zap.Error(err))
 		return "", common.ErrTokenGeneration
 	}
 
 	return signedToken, nil
 }
 
-func (service *AuthService) generateAccessToken(userID uuid.UUID, role types.UserRole) (string, error) {
+func (service *AuthService) generateAccessToken(
+	userID uuid.UUID,
+	role types.UserRole,
+) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
@@ -264,7 +265,7 @@ func (service *AuthService) generateAccessToken(userID uuid.UUID, role types.Use
 		service.AppConfig.JWTSecret,
 		time.Duration(service.AppConfig.JWTExpiresIn)*time.Hour)
 	if err != nil {
-		service.Logger.Error("Internal error while signing JWT accessToken:", zap.Error(err))
+		service.Logger.Error("JWT access token generation failed", zap.Error(err))
 		return "", common.ErrTokenGeneration
 	}
 

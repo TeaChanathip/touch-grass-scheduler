@@ -42,10 +42,6 @@ var (
 		StatusCode: http.StatusInternalServerError,
 		Message:    "failed sending mail",
 	}
-	ErrVariableParsing = CustomError{
-		StatusCode: http.StatusInternalServerError,
-		Message:    "failed parsing variable",
-	}
 	ErrUUIDGeneration = CustomError{
 		StatusCode: http.StatusInternalServerError,
 		Message:    "failed generating uuid",
@@ -60,13 +56,17 @@ var (
 		StatusCode: http.StatusBadRequest,
 		Message:    "email already exists",
 	}
+	ErrInvalidActionToken = CustomError{
+		StatusCode: http.StatusBadRequest,
+		Message:    "invalid action token",
+	}
 	ErrActionTokenParsing = CustomError{
 		StatusCode: http.StatusBadRequest,
 		Message:    "failed parsing action token",
 	}
-	ErrActionTokenClaimsGetting = CustomError{
+	ErrActionTokenClaimsRetrieval = CustomError{
 		StatusCode: http.StatusBadRequest,
-		Message:    "failed getting action token claims",
+		Message:    "failed retrieval action token claims",
 	}
 	ErrActionTokenExpired = CustomError{
 		StatusCode: http.StatusBadRequest,

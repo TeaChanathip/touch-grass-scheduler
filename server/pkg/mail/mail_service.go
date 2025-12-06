@@ -15,12 +15,14 @@ import (
 
 type MailServiceParams struct {
 	fx.In
+	FlagConfig *configfx.FlagConfig
 	AppConfig  *configfx.AppConfig
 	Logger     *zap.Logger
 	MailClient *gomail.Client
 }
 
 type MailService struct {
+	FlagConfig                  *configfx.FlagConfig
 	AppConfig                   *configfx.AppConfig
 	Logger                      *zap.Logger
 	MailClient                  *gomail.Client
@@ -55,6 +57,7 @@ func NewMailService(params MailServiceParams) *MailService {
 	}
 
 	return &MailService{
+		FlagConfig:                  params.FlagConfig,
 		AppConfig:                   params.AppConfig,
 		Logger:                      params.Logger,
 		MailClient:                  params.MailClient,
@@ -65,6 +68,15 @@ func NewMailService(params MailServiceParams) *MailService {
 }
 
 func (service *MailService) SendRegistrationWarning(user *models.User) error {
+	// For non-production environment
+	if service.FlagConfig.Environment != "production" {
+		service.Logger.Info(
+			"Mail sending interception",
+			zap.String("mail_type", "registration_warning"),
+		)
+		return nil
+	}
+
 	subject := "Did you try to sign up for Touch-Grass-Scheduler?"
 
 	data := &struct {
@@ -90,7 +102,20 @@ func (service *MailService) SendRegistrationWarning(user *models.User) error {
 	return nil
 }
 
-func (service *MailService) SendRegistrationVerification(email string, registrationToken string) error {
+func (service *MailService) SendRegistrationVerification(
+	email string,
+	registrationToken string,
+) error {
+	// For non-production environment
+	if service.FlagConfig.Environment != "production" {
+		service.Logger.Info(
+			"Mail sending interception",
+			zap.String("mail_type", "registration_verification"),
+			zap.String("registration_token", registrationToken),
+		)
+		return nil
+	}
+
 	subject := fmt.Sprintf("Complete your %s registration", appName)
 
 	data := &struct {
@@ -116,6 +141,16 @@ func (service *MailService) SendRegistrationVerification(email string, registrat
 }
 
 func (service *MailService) SendResetPwd(user *models.User, resetPwdToken string) error {
+	// For non-production environment
+	if service.FlagConfig.Environment != "production" {
+		service.Logger.Info(
+			"Mail sending interception",
+			zap.String("mail_type", "reset_password"),
+			zap.String("reset_password_token", resetPwdToken),
+		)
+		return nil
+	}
+
 	subject := fmt.Sprintf("Reset your password on %s", appName)
 
 	// NOTE: ExpireIn is hardcoded. Please set to sync with auth_service
@@ -145,7 +180,11 @@ func (service *MailService) SendResetPwd(user *models.User, resetPwdToken string
 
 // ======================== HELPER METHODS ========================
 
-func (service *MailService) setBodyAndSend(reciever, sender, subject string, tpl *template.Template, data any) error {
+func (service *MailService) setBodyAndSend(
+	reciever, sender, subject string,
+	tpl *template.Template,
+	data any,
+) error {
 	var err error
 
 	msg := gomail.NewMsg()

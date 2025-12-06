@@ -60,9 +60,10 @@ func (user *User) ToPublic(
 		)
 		if err != nil {
 			logger.Error(
-				"User avatar URL signing failed",
+				"Signed GET URL generation failed",
 				zap.String("user_id", user.ID.String()),
-				zap.String("object_name", *user.AvatarKey),
+				zap.String("object_key", *user.AvatarKey),
+				zap.String("type", "user_avatar"),
 				zap.Error(err),
 			)
 			return nil, common.ErrStorage
