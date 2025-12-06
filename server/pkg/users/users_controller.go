@@ -33,26 +33,30 @@ func NewUsersController(params UsersControllerParams) *UsersController {
 // ======================== REQUEST BODY ========================
 
 type UpdateUserBody struct {
-	FirstName  *string           `json:"first_name" binding:"omitempty,max=128,alpha"`
+	FirstName  *string           `json:"first_name"  binding:"omitempty,max=128,alpha"`
 	MiddleName *string           `json:"middle_name" binding:"omitempty,max=128,len=0|alpha"`
-	LastName   *string           `json:"last_name" binding:"omitempty,max=128,len=0|alpha"`
-	Phone      *string           `json:"phone" binding:"omitempty,e164"`
-	Gender     *types.UserGender `json:"gender" binding:"omitempty,oneof=''male' 'female' 'other' 'prefer_not_to_say'"`
+	LastName   *string           `json:"last_name"   binding:"omitempty,max=128,len=0|alpha"`
+	Phone      *string           `json:"phone"       binding:"omitempty,e164"`
+	Gender     *types.UserGender `json:"gender"      binding:"omitempty,oneof=''male' 'female' 'other' 'prefer_not_to_say'"`
+}
+
+// ======================== RESPONSE BODY ========================
+
+type GetUploadAvatarSignedURLResponse struct {
+	URL      string            `json:"url"`
+	FormData map[string]string `json:"form_data"`
 }
 
 // ======================== METHODS ========================
 
 func (controller *UsersController) GetMe(ctx *gin.Context) {
-	// Get userID Context that set by AuthMiddleware
-	_userID, _ := ctx.Get("user_id")
-	userID, err := uuid.Parse(_userID.(string))
-	if err != nil {
-		controller.Logger.Debug("Failed to parse userID", zap.Error(err))
+	userID, ok := controller.parseUserID(ctx.GetString("user_id"))
+	if !ok {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
 		return
 	}
 
-	user, err := controller.UserService.GetPublicUserByID(userID)
+	user, err := controller.UserService.GetPublicUserByID(*userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
@@ -62,16 +66,14 @@ func (controller *UsersController) GetMe(ctx *gin.Context) {
 }
 
 func (controller *UsersController) GetUserByID(ctx *gin.Context) {
-	// Get id from params
-	id := ctx.Param("id")
-	userID, err := uuid.Parse(id)
-	if err != nil {
-		controller.Logger.Debug("Failed to parse userID", zap.Error(err))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "request ID is not UUID"})
+	// Get userIDParam from params
+	userID, ok := controller.parseUserID(ctx.Param("id"))
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "request id is not uuid"})
 		return
 	}
 
-	user, err := controller.UserService.GetPublicUserByID(userID)
+	user, err := controller.UserService.GetPublicUserByID(*userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
@@ -82,10 +84,8 @@ func (controller *UsersController) GetUserByID(ctx *gin.Context) {
 
 func (controller *UsersController) UpdateUserByID(ctx *gin.Context) {
 	// Get userID Context that set by AuthMiddleware
-	_userID, _ := ctx.Get("user_id")
-	userID, err := uuid.Parse(_userID.(string))
-	if err != nil {
-		controller.Logger.Debug("Failed to parse userID", zap.Error(err))
+	userID, ok := controller.parseUserID(ctx.GetString("user_id"))
+	if !ok {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
 		return
 	}
@@ -94,7 +94,7 @@ func (controller *UsersController) UpdateUserByID(ctx *gin.Context) {
 	updateUserBody, _ := validatedBody.(*UpdateUserBody)
 	controller.Logger.Debug(fmt.Sprintf("%+v\n", updateUserBody))
 
-	user, err := controller.UserService.UpdateUserByID(userID, updateUserBody)
+	user, err := controller.UserService.UpdateUserByID(*userID, updateUserBody)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
@@ -105,38 +105,49 @@ func (controller *UsersController) UpdateUserByID(ctx *gin.Context) {
 
 func (controller *UsersController) GetUploadAvatarSignedURL(ctx *gin.Context) {
 	// Get userID Context that set by AuthMiddleware
-	_userID, _ := ctx.Get("user_id")
-	userID, err := uuid.Parse(_userID.(string))
-	if err != nil {
-		controller.Logger.Debug("Failed to parse userID", zap.Error(err))
+	userID, ok := controller.parseUserID(ctx.GetString("user_id"))
+	if !ok {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
 		return
 	}
 
-	response, err := controller.UserService.GetUploadAvatarSignedURL(userID)
+	response, err := controller.UserService.GetUploadAvatarSignedURL(*userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, &response)
 }
 
 func (controller *UsersController) HandleAvatarUpload(ctx *gin.Context) {
 	// Get userID Context that set by AuthMiddleware
-	_userID, _ := ctx.Get("user_id")
-	userID, err := uuid.Parse(_userID.(string))
-	if err != nil {
-		controller.Logger.Debug("Failed to parse userID", zap.Error(err))
+	userID, ok := controller.parseUserID(ctx.GetString("user_id"))
+	if !ok {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
 		return
 	}
 
-	url, err := controller.UserService.HandleAvatarUpload(ctx.Request.Context(), userID)
+	url, err := controller.UserService.HandleAvatarUpload(ctx.Request.Context(), *userID)
 	if err != nil {
 		common.HandleBusinessLogicErr(ctx, err)
 		return
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{"avatar_url": url.String()})
+}
+
+func (controller *UsersController) parseUserID(
+	userIDStr string,
+) (*uuid.UUID, bool) {
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		controller.Logger.Debug(
+			"User ID parsing failed",
+			zap.String("user_id", userIDStr),
+			zap.Error(err),
+		)
+		return nil, false
+	}
+	return &userID, true
 }

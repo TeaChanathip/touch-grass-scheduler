@@ -38,7 +38,7 @@ type UserService struct {
 type UserServiceInterface interface {
 	GetPublicUserByID(userID uuid.UUID) (*models.PublicUser, error)
 	UpdateUserByID(userID uuid.UUID, body *UpdateUserBody) (*models.PublicUser, error)
-	GetUploadAvatarSignedURL(userID uuid.UUID) (map[string]any, error)
+	GetUploadAvatarSignedURL(userID uuid.UUID) (*GetUploadAvatarSignedURLResponse, error)
 	UpdateUserPwdByEmail(email, newPassword string) error
 	CreateUser(user *models.User) error
 	GetUserByEmail(email string) (*models.User, error)
@@ -66,7 +66,9 @@ func (service *UserService) GetPublicUserByID(userID uuid.UUID) (*models.PublicU
 		return nil, err
 	}
 
-	publicUser, err := user.ToPublic(service.StorageClient,
+	publicUser, err := user.ToPublic(
+		service.Logger,
+		service.StorageClient,
 		service.AppConfig.StorageBucketName,
 		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 	if err != nil {
@@ -76,21 +78,24 @@ func (service *UserService) GetPublicUserByID(userID uuid.UUID) (*models.PublicU
 	return publicUser, nil
 }
 
-func (service *UserService) UpdateUserByID(userID uuid.UUID, body *UpdateUserBody) (*models.PublicUser, error) {
+func (service *UserService) UpdateUserByID(
+	userID uuid.UUID,
+	body *UpdateUserBody,
+) (*models.PublicUser, error) {
 	var updatedUser *models.User
 
 	// NOTE: Gorm doen't support update and return in one operation
 	// Utilize transaction for atomicity
 	err := service.DB.Transaction(
 		func(tx *gorm.DB) error {
-			// Operation1: Perform update
+			// 1. Perform update
 			result := tx.Model(&models.User{}).
 				Where("id = ?", userID).
 				Updates(&body)
 
 			if result.Error != nil {
-				service.Logger.Error("Database error while updating user",
-					zap.String("id", userID.String()),
+				service.Logger.Error("User database update failed",
+					zap.String("user_id", userID.String()),
 					zap.Error(result.Error),
 				)
 				return common.ErrDatabase
@@ -98,25 +103,21 @@ func (service *UserService) UpdateUserByID(userID uuid.UUID, body *UpdateUserBod
 
 			// No row affected (no user found)
 			if result.RowsAffected == 0 {
-				service.Logger.Debug("User not found for update", zap.String("id", userID.String()))
+				service.Logger.Debug(
+					"User database update skipped",
+					zap.String("reason", "user_not_found"),
+					zap.String("user_id", userID.String()),
+				)
 				return common.ErrUserNotFound
 			}
 
-			// Operation2: Get updated user
+			// 2. Get updated user
 			err := tx.First(&updatedUser, "id = ?", userID).Error
 			if err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					service.Logger.Error("Updated user but could not fetch it (race condition?)",
-						zap.String("id", userID.String()),
-					)
-					return common.ErrUserNotFound
-				}
-
-				service.Logger.Error("Database error while fetching updated user",
-					zap.String("id", userID.String()),
+				service.Logger.Error("User database retrieval failed",
+					zap.String("user_id", userID.String()),
 					zap.Error(err),
 				)
-				// Return error to trigger a rollback
 				return common.ErrDatabase
 			}
 			return nil
@@ -126,25 +127,31 @@ func (service *UserService) UpdateUserByID(userID uuid.UUID, body *UpdateUserBod
 		return nil, err
 	}
 
-	publicUser, err := updatedUser.ToPublic(service.StorageClient,
+	publicUser, err := updatedUser.ToPublic(
+		service.Logger,
+		service.StorageClient,
 		service.AppConfig.StorageBucketName,
 		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn))
 	if err != nil {
-		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
 		return nil, err
 	}
 
 	return publicUser, nil
 }
 
-func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[string]any, error) {
+func (service *UserService) GetUploadAvatarSignedURL(
+	userID uuid.UUID,
+) (*GetUploadAvatarSignedURLResponse, error) {
 	var result *gorm.DB
 
 	// Delete old pending uploads (if exists)
 	result = service.DB.Where("user_id = ? AND type = 'avatar'", userID).
 		Delete(models.PendingUpload{})
 	if result.Error != nil {
-		service.Logger.Error("Database error while deleting old pending upload",
+		service.Logger.Error(
+			"Pending upload database deletion failed",
+			zap.String("user_id", userID.String()),
+			zap.String("type", "pending_user_avatar"),
 			zap.Error(result.Error),
 		)
 		return nil, common.ErrDatabase
@@ -153,8 +160,8 @@ func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[stri
 	// Generate ID that will be used in object name
 	objectID, err := uuid.NewRandom()
 	if err != nil {
-		service.Logger.Error("Error while generating UUID", zap.Error(err))
-		return nil, common.ErrUUIDGenerating
+		service.Logger.Error("UUID generation failed", zap.Error(err))
+		return nil, common.ErrUUIDGeneration
 	}
 
 	// Generate URL
@@ -162,7 +169,12 @@ func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[stri
 	pendingObjectKey := fmt.Sprintf("pending/%s", objectKey)
 	url, formData, err := service.generateAvatarUploadURL(pendingObjectKey)
 	if err != nil {
-		service.Logger.Error("", zap.Error(err))
+		service.Logger.Error(
+			"Signed POST URL storage generation failed",
+			zap.String("user_id", userID.String()),
+			zap.String("type", "pending_user_avatar"),
+			zap.Error(err),
+		)
 		return nil, common.ErrStorage
 	}
 
@@ -176,56 +188,62 @@ func (service *UserService) GetUploadAvatarSignedURL(userID uuid.UUID) (map[stri
 
 	result = service.DB.Create(pendingUpload)
 	if result.Error != nil {
-		service.Logger.Error("Database error while creating pending_upload",
+		service.Logger.Error("Pending upload database creation failed",
+			zap.String("user_id", userID.String()),
+			zap.String("type", "pending_user_avatar"),
 			zap.Error(result.Error),
 		)
 		return nil, common.ErrDatabase
 	}
 
-	response := map[string]any{
-		"url":       url.String(),
-		"form_data": formData,
+	response := &GetUploadAvatarSignedURLResponse{
+		URL:      url.String(),
+		FormData: formData,
 	}
 
 	return response, nil
 }
 
-func (service *UserService) HandleAvatarUpload(ctx context.Context, userID uuid.UUID) (*url.URL, error) {
-	// Query pending upload of user's avatar
+func (service *UserService) HandleAvatarUpload(
+	ctx context.Context,
+	userID uuid.UUID,
+) (*url.URL, error) {
+	// 1. Query pending upload of user's avatar
 	var pendingUpload *models.PendingUpload
 	result := service.DB.Where("user_id = ? AND type = 'avatar'", userID).First(&pendingUpload)
 	if result.Error != nil {
-		service.Logger.Error("Database error while getting pending upload with UserID", zap.Error(result.Error))
+		service.Logger.Error(
+			"Pending upload database retrieval failed",
+			zap.String("user_id", userID.String()),
+			zap.String("type", "pending_user_avatar"),
+			zap.Error(result.Error),
+		)
 		return nil, common.ErrDatabase
 	}
 
-	// Check if the object actually exists on the Storage
+	// 2. Check if the object actually exists on the Storage
+	pendingKey := fmt.Sprintf("pending/%s", pendingUpload.ObjectKey)
 	_, err := service.StorageClient.StatObject(ctx,
 		service.AppConfig.StorageBucketName,
-		fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
+		pendingKey,
 		minio.StatObjectOptions{})
 	if err != nil {
-		minioErr, ok := err.(minio.ErrorResponse)
-		if ok && minioErr.Code == "NoSuchKey" {
-			service.Logger.Sugar().Debugf("%s not found in Storage", pendingUpload.ObjectKey)
+		var minioErr minio.ErrorResponse
+		if errors.As(err, &minioErr) && minioErr.Code == "NoSuchKey" {
+			service.Logger.Debug(
+				"Object storage upload skipped",
+				zap.String("reason", "object_not_found"),
+				zap.String("type", "pending_user_avatar"),
+				zap.String("", pendingUpload.ObjectKey),
+			)
 			return nil, common.ErrStorageObjectNotFound
 		}
-		service.Logger.Error("Storage error while getting ObjectInfo", zap.Error(err))
-		return nil, common.ErrStorage
-	}
-
-	// Copy and rename pending object in Storage
-	src := minio.CopySrcOptions{
-		Bucket: service.AppConfig.StorageBucketName,
-		Object: fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
-	}
-	dst := minio.CopyDestOptions{
-		Bucket: service.AppConfig.StorageBucketName,
-		Object: pendingUpload.ObjectKey,
-	}
-	_, err = service.StorageClient.CopyObject(ctx, dst, src)
-	if err != nil {
-		service.Logger.Error("Storage error while moving avatar from pending to avatars", zap.Error(err))
+		service.Logger.Error(
+			"Object info storage retrieval failed",
+			zap.String("object_key", pendingKey),
+			zap.String("type", "pending_user_avatar"),
+			zap.Error(err),
+		)
 		return nil, common.ErrStorage
 	}
 
@@ -234,16 +252,20 @@ func (service *UserService) HandleAvatarUpload(ctx context.Context, userID uuid.
 	err = service.DB.Transaction(func(tx *gorm.DB) error {
 		var result *gorm.DB
 
-		// Get user by ID
+		// 3. Get user by ID
 		result = tx.Where("id = ?", userID).First(&updatedUser)
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			// User not found
-			service.Logger.Debug("User not found", zap.String("id", userID.String()))
+			service.Logger.Debug(
+				"User avatar database upload skipped",
+				zap.String("reason", "user_not_found"),
+				zap.String("user_id", userID.String()),
+			)
 			return common.ErrUserNotFound
 		} else if result.Error != nil {
 			// Other errors
-			service.Logger.Error("Database error while getting user with id",
-				zap.String("id", userID.String()),
+			service.Logger.Error("User database retrieval failed",
+				zap.String("user_id", userID.String()),
 				zap.Error(result.Error),
 			)
 			return common.ErrDatabase
@@ -254,36 +276,44 @@ func (service *UserService) HandleAvatarUpload(ctx context.Context, userID uuid.
 		// Error group for the following database operation go routines
 		gDB, errGroupDBCtx := errgroup.WithContext(ctx)
 
-		// Update 'avatar_url' of user in DB
+		// 4. Update 'avatar_url' of user in DB
 		gDB.Go(func() error {
 			result = tx.WithContext(errGroupDBCtx).Model(&updatedUser).
 				Update("avatar_key", &pendingUpload.ObjectKey)
 			if result.Error != nil {
 				// Other errors
-				service.Logger.Error("Database error while updating user's avatar_key",
-					zap.String("id", userID.String()),
+				service.Logger.Error(
+					"User avatar database update failed",
+					zap.String("user_id", userID.String()),
 					zap.Error(result.Error))
 				return common.ErrDatabase
 			}
 			return nil
 		})
 
-		// Delete pending upload in Database
+		// 5. Delete pending upload in Database
 		gDB.Go(func() error {
 			result = tx.
 				WithContext(errGroupDBCtx).
 				Where("user_id = ? AND object_key = ? AND type = 'avatar'", userID, pendingUpload.ObjectKey).
 				Delete(models.PendingUpload{})
 			if result.Error != nil {
-				service.Logger.Error("Database error while deleting pending upload",
+				service.Logger.Error(
+					"Pending upload database deletion failed",
+					zap.String("user_id", userID.String()),
+					zap.String("type", "pending_user_avatar"),
 					zap.Error(result.Error),
 				)
 				return common.ErrDatabase
 			}
 			if result.RowsAffected == 0 {
-				service.Logger.Warn("No pending upload deleted",
+				// "No pending upload deleted",
+				service.Logger.Error(
+					"Pending upload database deletion skipped",
+					zap.String("reason", "pending_upload_not_found"),
+					zap.String("type", "pending_user_avatar"),
 					zap.String("user_id", userID.String()),
-					zap.String("object_key", pendingUpload.ObjectKey))
+				)
 				return common.ErrPendingUploadNotFound
 			}
 			return nil
@@ -296,10 +326,31 @@ func (service *UserService) HandleAvatarUpload(ctx context.Context, userID uuid.
 		return nil, err
 	}
 
+	// 6. Copy and rename pending object in Storage
+	src := minio.CopySrcOptions{
+		Bucket: service.AppConfig.StorageBucketName,
+		Object: pendingKey,
+	}
+	dst := minio.CopyDestOptions{
+		Bucket: service.AppConfig.StorageBucketName,
+		Object: pendingUpload.ObjectKey,
+	}
+	_, err = service.StorageClient.CopyObject(ctx, dst, src)
+	if err != nil {
+		service.Logger.Error(
+			"Object storage copy failed",
+			zap.String("from_object_key", pendingKey),
+			zap.String("to_object_key", pendingUpload.ObjectKey),
+			zap.String("type", "user_avatar"),
+			zap.Error(err),
+		)
+		return nil, common.ErrStorage
+	}
+
 	// Error group for the following storage operation go routines
 	gStorage, errGroupStorageCtx := errgroup.WithContext(ctx)
 
-	// Delete old avatar from Storage (if exists)
+	// 7. Delete old avatar from Storage (if exists)
 	if oldAvatarKey != nil {
 		gStorage.Go(func() error {
 			err := service.StorageClient.RemoveObject(errGroupStorageCtx,
@@ -307,21 +358,31 @@ func (service *UserService) HandleAvatarUpload(ctx context.Context, userID uuid.
 				*oldAvatarKey,
 				minio.RemoveObjectOptions{})
 			if err != nil {
-				service.Logger.Error("Storage error while deleting old avatar", zap.Error(err))
+				service.Logger.Error(
+					"Object storage deletion failed",
+					zap.String("object_key", *oldAvatarKey),
+					zap.String("type", "user_avatar"),
+					zap.Error(err),
+				)
 				return common.ErrStorage
 			}
 			return nil
 		})
 	}
 
-	// Delete the pending object in Storage
+	// 8. Delete the pending object in Storage
 	gStorage.Go(func() error {
 		err = service.StorageClient.RemoveObject(errGroupStorageCtx,
 			service.AppConfig.StorageBucketName,
-			fmt.Sprintf("pending/%s", pendingUpload.ObjectKey),
+			pendingKey,
 			minio.RemoveObjectOptions{})
 		if err != nil {
-			service.Logger.Error("Storage error while deleting pending avatar object", zap.Error(err))
+			service.Logger.Error(
+				"Object storage deletion failed",
+				zap.String("object_key", pendingKey),
+				zap.String("type", "pending_user_avatar"),
+				zap.Error(err),
+			)
 			return common.ErrStorage
 		}
 		return nil
@@ -337,7 +398,11 @@ func (service *UserService) HandleAvatarUpload(ctx context.Context, userID uuid.
 		time.Hour*time.Duration(service.AppConfig.JWTExpiresIn),
 		nil)
 	if err != nil {
-		service.Logger.Error("Error getting signed URL for user's avatar", zap.Error(err))
+		service.Logger.Error(
+			"Signed GET URL storage generation failed",
+			zap.String("type", "user_avatar"),
+			zap.Error(err),
+		)
 		return nil, common.ErrStorage
 	}
 
@@ -350,7 +415,7 @@ func (service *UserService) CreateUser(user *models.User) error {
 	// Hash the password
 	hashed, err := common.HashPassword(user.Password)
 	if err != nil {
-		service.Logger.Error("Internal error while hashing the password:", zap.Error(err))
+		service.Logger.Error("Password hashing failed", zap.Error(err))
 		return common.ErrPasswordHashing
 	}
 
@@ -362,14 +427,19 @@ func (service *UserService) CreateUser(user *models.User) error {
 
 	if result.Error != nil {
 		// Check for PostgreSQL unique constraint violation
-		// I know this looks absurd, but this is the simplest solution
+		// I know this looks absurd, but it is the simplest solution
 		if strings.Contains(result.Error.Error(), "SQLSTATE 23505") {
-			service.Logger.Debug("Email is duplicated", zap.String("email", user.Email))
+			service.Logger.Debug(
+				"User database creation skipped",
+				zap.String("reason", "email_duplicated"),
+				zap.String("email", user.Email),
+			)
 			return common.ErrDuplicatedEmail
 		}
 
 		// Other database errors
-		service.Logger.Error("Database error while creating user",
+		service.Logger.Error(
+			"User database creation failed",
 			zap.Error(result.Error),
 		)
 		return common.ErrDatabase
@@ -385,12 +455,17 @@ func (service *UserService) GetUserByEmail(email string) (*models.User, error) {
 	result := service.DB.Where("email = ?", email).First(&user)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// User not found
-		service.Logger.Debug("User not found", zap.String("email", email))
+		service.Logger.Debug(
+			"User database retrieval skipped",
+			zap.String("reason", "user_not_found"),
+			zap.String("email", email),
+		)
 		return nil, common.ErrUserNotFound
 	} else if result.Error != nil {
 		// Other errors
-		service.Logger.Error("Database error while fetching user with email",
+		service.Logger.Error(
+			// "Database error while fetching user with email",
+			"User database retrieval failed",
 			zap.String("email", email),
 			zap.Error(result.Error),
 		)
@@ -406,12 +481,16 @@ func (service *UserService) GetUserByID(userID uuid.UUID) (*models.User, error) 
 	result := service.DB.First(&user, userID)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		// User not found
-		service.Logger.Debug("User not found", zap.String("id", userID.String()))
+		service.Logger.Debug(
+			"User database retrieval skipped",
+			zap.String("reason", "user_id_not_found"),
+			zap.String("user_id", userID.String()),
+		)
 		return nil, common.ErrUserNotFound
 	} else if result.Error != nil {
 		// Other errors
-		service.Logger.Error("Database error while getting user with id",
+		service.Logger.Error(
+			"User database retrieval failed",
 			zap.String("id", userID.String()),
 			zap.Error(result.Error),
 		)
@@ -425,7 +504,7 @@ func (service *UserService) UpdateUserPwdByEmail(email, newPassword string) erro
 	// Hash the password
 	hashed, err := common.HashPassword(newPassword)
 	if err != nil {
-		service.Logger.Error("Internal error while hashing the password:", zap.Error(err))
+		service.Logger.Error("Password hashing failed", zap.String("email", email), zap.Error(err))
 		return common.ErrPasswordHashing
 	}
 
@@ -433,7 +512,11 @@ func (service *UserService) UpdateUserPwdByEmail(email, newPassword string) erro
 		result := tx.Model(&models.User{}).Where("email = ?", email).Update("password", hashed)
 		// Must be only one user that affected
 		if result.Error != nil || result.RowsAffected != 1 {
-			service.Logger.Error("Database error while updating user's password", zap.Error(result.Error))
+			service.Logger.Error(
+				"User password database update failed",
+				zap.String("email", email),
+				zap.Error(result.Error),
+			)
 			return common.ErrDatabase
 		}
 		return nil
@@ -445,7 +528,9 @@ func (service *UserService) UpdateUserPwdByEmail(email, newPassword string) erro
 	return nil
 }
 
-func (service *UserService) generateAvatarUploadURL(objectKey string) (*url.URL, map[string]string, error) {
+func (service *UserService) generateAvatarUploadURL(
+	objectKey string,
+) (*url.URL, map[string]string, error) {
 	// Create upload policy
 	policy := minio.NewPostPolicy()
 

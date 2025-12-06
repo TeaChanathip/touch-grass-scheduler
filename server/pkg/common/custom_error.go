@@ -46,7 +46,7 @@ var (
 		StatusCode: http.StatusInternalServerError,
 		Message:    "failed parsing variable",
 	}
-	ErrUUIDGenerating = CustomError{
+	ErrUUIDGeneration = CustomError{
 		StatusCode: http.StatusInternalServerError,
 		Message:    "failed generating uuid",
 	}
