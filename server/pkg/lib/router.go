@@ -46,7 +46,17 @@ func NewRouter(params RouterParam) *gin.Engine {
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost:3000"} // Specify allowed origins
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept", "User-Agent", "Cache-Control", "Pragma", "Referer", "Referrer-Policy"}
+	config.AllowHeaders = []string{
+		"Origin",
+		"Content-Type",
+		"Authorization",
+		"Accept",
+		"User-Agent",
+		"Cache-Control",
+		"Pragma",
+		"Referer",
+		"Referrer-Policy",
+	}
 	config.ExposeHeaders = []string{"Content-Length"} // Headers exposed to the client
 	config.AllowCredentials = true
 	config.MaxAge = 12 * time.Hour // Cache preflight requests for 12 hours
@@ -67,7 +77,7 @@ func NewRouter(params RouterParam) *gin.Engine {
 		})
 	}
 
-	params.Logger.Info("Router initialized successfully.")
+	params.Logger.Info("Router initialization succeeded")
 
 	return router
 }

@@ -39,7 +39,7 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 		return "", "", fmt.Errorf("failed retrieving access token: %w", err)
 	}
 	if accessTokenString == "" {
-		return "", "", errors.New("access token is empty")
+		return "", "", errors.New("empty access token")
 	}
 
 	accessToken, err := common.ParseJWTToken(accessTokenString, m.AppConfig.JWTSecret)
@@ -48,7 +48,7 @@ func (m *AuthMiddleware) HandlerCoreLogic(ctx *gin.Context) (string, types.UserR
 	}
 
 	if !accessToken.Valid {
-		return "", "", errors.New("access token is not valid")
+		return "", "", errors.New("invalid access token")
 	}
 
 	// Validate accessToken claims
@@ -75,14 +75,20 @@ func (m *AuthMiddleware) HandlerWithRole(roles ...types.UserRole) gin.HandlerFun
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
-			m.Logger.Debug("Handle access token failed", zap.Error(err))
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or missing access token"})
+			m.Logger.Debug("Access token validation failed", zap.Error(err))
+			ctx.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				gin.H{"error": "invalid or missing access token"},
+			)
 			return
 		}
 
 		// Check if user has required role
 		if !slices.Contains(roles, userRole) {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+			ctx.AbortWithStatusJSON(
+				http.StatusForbidden,
+				gin.H{"error": "insufficient permissions"},
+			)
 			return
 		}
 
@@ -98,8 +104,11 @@ func (m *AuthMiddleware) Handler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		userID, userRole, err := m.HandlerCoreLogic(ctx)
 		if err != nil {
-			m.Logger.Debug("Handle access token failed", zap.Error(err))
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or missing access token"})
+			m.Logger.Debug("Access token validation failed", zap.Error(err))
+			ctx.AbortWithStatusJSON(
+				http.StatusUnauthorized,
+				gin.H{"error": "invalid or missing access token"},
+			)
 			return
 		}
 

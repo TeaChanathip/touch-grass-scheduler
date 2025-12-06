@@ -40,7 +40,7 @@ func NewLogger(params LoggerParams) (*zap.Logger, error) {
 		return nil, fmt.Errorf("failed building logger: %w", err)
 	}
 
-	logger.Info("Logger initialized successfully.",
+	logger.Info("Logger initialization succeeded",
 		zap.String("min_level", cfg.Level.String()),
 		zap.String("format", cfg.Encoding),
 	)

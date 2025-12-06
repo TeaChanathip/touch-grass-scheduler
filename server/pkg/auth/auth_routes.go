@@ -43,11 +43,11 @@ func (routes *AuthRoutes) Setup() {
 	)
 
 	routes.Router.POST(string(endpoints.RegisterV1)+"/:registrationToken",
-		routes.RequestBodyValidator.Handler("register", RegisterBody{}),
+		routes.RequestBodyValidator.Handler(RegisterBody{}),
 		routes.AuthController.Register)
 
 	routes.Router.POST(string(endpoints.LoginV1),
-		routes.RequestBodyValidator.Handler("login", LoginBody{}),
+		routes.RequestBodyValidator.Handler(LoginBody{}),
 		routes.AuthController.Login)
 
 	routes.Router.POST(string(endpoints.LogoutV1),
@@ -58,6 +58,6 @@ func (routes *AuthRoutes) Setup() {
 		routes.AuthController.GetResetPwdMail)
 
 	routes.Router.PUT(string(endpoints.ResetPwdV1),
-		routes.RequestBodyValidator.Handler("reset password", ResetPwdBody{}),
+		routes.RequestBodyValidator.Handler(ResetPwdBody{}),
 		routes.AuthController.ResetPwd)
 }

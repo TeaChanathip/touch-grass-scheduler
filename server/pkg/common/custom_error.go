@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,35 +18,87 @@ func (e CustomError) Error() string {
 
 var (
 	// 500 Internal Server Errors
-	ErrTokenGeneration = CustomError{StatusCode: http.StatusInternalServerError, Message: "accessToken generation failed"}
-	ErrPasswordHashing = CustomError{StatusCode: http.StatusInternalServerError, Message: "password hashing failed"}
-	ErrDatabase        = CustomError{StatusCode: http.StatusInternalServerError, Message: "database error"}
-	ErrMailHTMLSetting = CustomError{StatusCode: http.StatusInternalServerError, Message: "set HTML to mail message failed"}
-	ErrMailSending     = CustomError{StatusCode: http.StatusInternalServerError, Message: "mail sending failed"}
-	ErrVariableParsing = CustomError{StatusCode: http.StatusInternalServerError, Message: "variable parsing failed"}
-	ErrUUIDGenerating  = CustomError{StatusCode: http.StatusInternalServerError, Message: "UUID generation failed"}
-	ErrStorage         = CustomError{StatusCode: http.StatusInternalServerError, Message: "storage error"}
-	ErrURLSigning      = CustomError{StatusCode: http.StatusInternalServerError, Message: "signing url failed"}
+	ErrDatabase = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "database error",
+	}
+	ErrStorage = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "storage error",
+	}
+	ErrTokenGeneration = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "failed generating access token",
+	}
+	ErrPasswordHashing = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "failed hashing password",
+	}
+	ErrMailHTMLSetting = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "failed setting mail html",
+	}
+	ErrMailSending = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "failed sending mail",
+	}
+	ErrVariableParsing = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "failed parsing variable",
+	}
+	ErrUUIDGenerating = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "failed generating uuid",
+	}
+	ErrURLSigning = CustomError{
+		StatusCode: http.StatusInternalServerError,
+		Message:    "failed signing url",
+	}
 
 	// 400 Bad Request
-	ErrDuplicatedEmail          = CustomError{StatusCode: http.StatusBadRequest, Message: "email already exists"}
-	ErrActionTokenParsing       = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken parsing failed"}
-	ErrActionTokenClaimsGetting = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken getting claims failed"}
-	ErrActionTokenExpired       = CustomError{StatusCode: http.StatusBadRequest, Message: "actionToken already expired"}
+	ErrDuplicatedEmail = CustomError{
+		StatusCode: http.StatusBadRequest,
+		Message:    "email already exists",
+	}
+	ErrActionTokenParsing = CustomError{
+		StatusCode: http.StatusBadRequest,
+		Message:    "failed parsing action token",
+	}
+	ErrActionTokenClaimsGetting = CustomError{
+		StatusCode: http.StatusBadRequest,
+		Message:    "failed getting action token claims",
+	}
+	ErrActionTokenExpired = CustomError{
+		StatusCode: http.StatusBadRequest,
+		Message:    "action token already expired",
+	}
 
 	// 401 Authentication/Authorization Errors
-	ErrInvalidCredentials = CustomError{StatusCode: http.StatusUnauthorized, Message: "invalid credentials"}
+	ErrInvalidCredentials = CustomError{
+		StatusCode: http.StatusUnauthorized,
+		Message:    "invalid credentials",
+	}
 
 	// 404 Not Found
-	ErrUserNotFound          = CustomError{StatusCode: http.StatusNotFound, Message: "user not found"}
-	ErrStorageObjectNotFound = CustomError{StatusCode: http.StatusNotFound, Message: "object not found"}
-	ErrPendingUploadNotFound = CustomError{StatusCode: http.StatusNotFound, Message: "pending upload not found"}
+	ErrUserNotFound = CustomError{
+		StatusCode: http.StatusNotFound,
+		Message:    "user not found",
+	}
+	ErrStorageObjectNotFound = CustomError{
+		StatusCode: http.StatusNotFound,
+		Message:    "object not found",
+	}
+	ErrPendingUploadNotFound = CustomError{
+		StatusCode: http.StatusNotFound,
+		Message:    "pending upload not found",
+	}
 )
 
 // ======================== HELPER FUNCTIONS ========================
 
 func HandleBusinessLogicErr(ctx *gin.Context, err error) {
-	if customErr, ok := err.(CustomError); ok {
+	var customErr CustomError
+	if errors.As(err, &customErr) {
 		ctx.JSON(customErr.StatusCode, gin.H{"error": customErr.Error()})
 	} else {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "unknown error"})

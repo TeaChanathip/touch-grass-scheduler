@@ -28,7 +28,7 @@ func NewMailClient(params MailClientParams) (*gomail.Client, error) {
 		return nil, fmt.Errorf("failed creating mail client: %w", err)
 	}
 
-	params.Logger.Debug("Mail client initialized successfully.")
+	params.Logger.Info("Mail client initialization succeeded")
 
 	return client, nil
 }

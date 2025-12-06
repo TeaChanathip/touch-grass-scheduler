@@ -47,7 +47,7 @@ func (u *User) ToPublic(storageClient *minio.Client, bucketName string, expires 
 
 		signedURL, err := storageClient.PresignedGetObject(ctx, bucketName, *u.AvatarKey, expires, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed getting presigned url: %w", err)
+			return nil, fmt.Errorf("failed getting presigned avatar url: %w", err)
 		}
 
 		signedURLStr := signedURL.String()

@@ -23,13 +23,19 @@ func NewStorageClient(params StorageClientParams) (*minio.Client, error) {
 	minioClient, err := minio.New(
 		params.AppConfig.StorageEndpoint,
 		&minio.Options{
-			Creds:  credentials.NewStaticV4(params.AppConfig.StorageAccessKeyID, params.AppConfig.StorageSecretAccessKey, ""),
+			Creds: credentials.NewStaticV4(
+				params.AppConfig.StorageAccessKeyID,
+				params.AppConfig.StorageSecretAccessKey,
+				"",
+			),
 			Secure: useSecure,
 		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed connecting to storage: %w", err)
 	}
+
+	params.Logger.Info("Storage client initialization succeeded")
 
 	return minioClient, nil
 }

@@ -51,7 +51,7 @@ func (routes *UsersRoutes) Setup() {
 		routes.AuthMiddleware.HandlerWithRole(types.UserRoleStudent,
 			types.UserRoleTeacher,
 			types.UserRoleGuardian),
-		routes.RequestBodyValidator.Handler("update-user", UpdateUserBody{}),
+		routes.RequestBodyValidator.Handler(UpdateUserBody{}),
 		routes.UsersController.UpdateUserByID)
 
 	routes.Router.GET(string(endpoints.GetUploadAvatarSignedURLV1),

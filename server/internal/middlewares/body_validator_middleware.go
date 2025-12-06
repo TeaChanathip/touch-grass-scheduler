@@ -28,15 +28,22 @@ func NewRequestBodyValidator(params RequestBodyValidatorParams) *RequestBodyVali
 	}
 }
 
-func (m *RequestBodyValidator) Handler(name string, structType any) gin.HandlerFunc {
+func (m *RequestBodyValidator) Handler(structType any) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Create a new instance of the struct type using reflection
 		structValue := reflect.New(reflect.TypeOf(structType))
 		validateBody := structValue.Interface()
 
 		if err := ctx.ShouldBindBodyWithJSON(&validateBody); err != nil {
-			m.Logger.Debug(fmt.Sprintf("Validation error on %s request", name), zap.Error(err))
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": parseValidationErrors(err)})
+			m.Logger.Debug(
+				"Request body validation failed",
+				zap.String("struct_name", reflect.TypeOf(structType).Name()),
+				zap.Error(err),
+			)
+			ctx.AbortWithStatusJSON(
+				http.StatusBadRequest,
+				gin.H{"error": parseValidationErrors(err)},
+			)
 			return
 		}
 
